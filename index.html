@@ -2165,51 +2165,47 @@ async function fetchLRP(op){
 
   try {
     const dateStr   = todayRMA();
-    const targetUrl = `https://public.rma.usda.gov/livestockreports/LRPReport.aspx`+
-      `?ReportType=W&EffectiveDate=${encodeURIComponent(dateStr)}`+
-      `&Commodity=${commodity}&State=${state}&Submit=Submit`;
 
-    // Proxy chain — Netlify function first (own server, most reliable),
-    // then public proxies as fallback
-    const isHosted  = location.protocol === 'https:';
-    const fnBase    = location.origin + '/.netlify/functions/lrp';
+    // ── YOUR CLOUDFLARE WORKER URL ──────────────────────────────────────
+    // After deploying rma-proxy-worker.js to Cloudflare Workers,
+    // replace the URL below with your worker URL, e.g.:
+    // const WORKER_URL = 'https://rma-proxy.yourname.workers.dev';
+    const WORKER_URL = 'https://rma-proxy.agrowise.workers.dev';
+    // ───────────────────────────────────────────────────────────────────
 
     const proxies = [
-      // Our own Netlify function — only works when hosted on Netlify
-      ...(isHosted ? [{
-        name: 'Agrowise server',
-        build: () => `${fnBase}?date=${encodeURIComponent(dateStr)}&commodity=${commodity}&state=${state}`,
-        extract: async r => { const j=await r.json(); return j.html||''; }
-      }] : []),
-      // Public fallbacks
+      // Primary — your own Cloudflare Worker (no HTML blocking, no rate limits)
+      { name: 'Agrowise proxy',
+        build: () => `${WORKER_URL}?date=${encodeURIComponent(dateStr)}&commodity=${commodity}&state=${state}`,
+        extract: async r => { const j = await r.json(); return j.html || ''; }
+      },
+      // Fallback — corsproxy.io (github.io is a free origin but blocks HTML — may fail)
       { name: 'corsproxy.io',
-        build: () => `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
-        extract: async r => await r.text() },
-      { name: 'allorigins',
-        build: () => `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
-        extract: async r => { const j=await r.json(); return j.contents||''; } },
-      { name: 'codetabs',
-        build: () => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(targetUrl)}`,
-        extract: async r => await r.text() },
+        build: () => `https://corsproxy.io/?url=${encodeURIComponent(
+          `https://public.rma.usda.gov/livestockreports/LRPReport.aspx`+
+          `?ReportType=W&EffectiveDate=${encodeURIComponent(dateStr)}&Commodity=${commodity}&State=${state}&Submit=Submit`
+        )}`,
+        extract: async r => await r.text()
+      },
     ];
 
     let html = null;
     let lastErr = '';
-    for(const proxy of proxies){
+    for (const proxy of proxies) {
       try {
-        setStatus(op,'loading',`Connecting via ${proxy.name}…`);
+        setStatus(op, 'loading', `Connecting via ${proxy.name}…`);
         const resp = await fetch(proxy.build());
-        if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const content = await proxy.extract(resp);
-        if(content && content.length > 200){ html = content; break; }
+        if (content && content.length > 200) { html = content; break; }
         throw new Error('Empty response');
-      } catch(e){
+      } catch (e) {
         lastErr = e.message;
         console.warn(`Proxy ${proxy.name} failed:`, e.message);
       }
     }
 
-    if(!html) throw new Error(`All proxies failed. Last: ${lastErr}`);
+    if (!html) throw new Error(`Proxy failed: ${lastErr}`);
     if(!html) throw new Error('Empty response');
 
     // Parse all rows for the target week length
