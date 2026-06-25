@@ -1,0 +1,83 @@
+name: Fetch Daily LRP Rates
+
+on:
+  schedule:
+    # Runs at 4:00 PM CT (21:00 UTC) every weekday — after RMA posts new rates at 3:30 PM CT
+    - cron: '0 21 * * 1-5'
+  workflow_dispatch:  # Also allows manual trigger from GitHub Actions tab
+
+jobs:
+  fetch-rates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch LRP rates from USDA RMA
+        run: |
+          python3 << 'PYTHON'
+          import urllib.request
+          import urllib.parse
+          import json
+          import re
+          from datetime import datetime, timezone, timedelta
+
+          # Get today's date in MM/DD/YYYY format
+          ct = timezone(timedelta(hours=-5))  # Central Time (approximate)
+          today = datetime.now(ct)
+          date_str = today.strftime('%m/%d/%Y')
+
+          commodities = ['FC', 'FD']  # Feeder Cattle, Fed Cattle
+          states = ['KS','NE','TX','OK','CO','SD','ND','MO','IA','MT','WY','ID','CA','FL']
+
+          all_data = {}
+          headers = {
+            'User-Agent': 'Mozilla/5.0 (compatible; Agrowise/1.0)',
+            'Accept': 'text/html,application/xhtml+xml',
+          }
+
+          for commodity in commodities:
+            for state in states:
+              key = f"{commodity}_{state}"
+              url = (
+                f"https://public.rma.usda.gov/livestockreports/LRPReport.aspx"
+                f"?ReportType=W"
+                f"&EffectiveDate={urllib.parse.quote(date_str)}"
+                f"&Commodity={commodity}"
+                f"&State={state}"
+                f"&Submit=Submit"
+              )
+              try:
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                  html = resp.read().decode('utf-8', errors='replace')
+                  if len(html) > 500:
+                    all_data[key] = html
+                    print(f"  OK: {key} ({len(html)} bytes)")
+                  else:
+                    print(f"  EMPTY: {key}")
+              except Exception as e:
+                print(f"  FAIL: {key} — {e}")
+
+          output = {
+            'date': date_str,
+            'fetched_at': datetime.now(timezone.utc).isoformat(),
+            'data': all_data
+          }
+
+          with open('lrp-rates.json', 'w') as f:
+            json.dump(output, f)
+
+          print(f"\nSaved {len(all_data)} rate tables to lrp-rates.json")
+          PYTHON
+
+      - name: Commit updated rates
+        run: |
+          git config user.name "Agrowise Bot"
+          git config user.email "bot@agrowise.com"
+          git add lrp-rates.json
+          git diff --staged --quiet || git commit -m "Daily LRP rates update $(date -u +%Y-%m-%d)"
+          git push
