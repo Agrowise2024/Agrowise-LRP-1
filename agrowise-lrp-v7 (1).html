@@ -1,0 +1,2543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agrowise — Feeder Cattle & LRP Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET & ROOT ─── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --ink:#1a1206; --ink2:#2c1e0c; --ink3:#3e2e18;
+  --gold:#c8a032; --gold-l:#e0be60; --gold-p:#fef9e8;
+  --hide:#9a6428; --hide-l:#c49060; --hide-p:#fdf5e8;
+  --grass:#3e5e22; --grass-l:#6a9040; --grass-p:#eef4e6;
+  --sky:#2e5e7a;
+  --cream:#f8f3e8; --cream2:#f0e8d4; --cream3:#ece0cc;
+  --stone:#7a7060; --mist:#b0a890; --fog:#d8d0c0;
+  --red:#a82020; --red-p:#fbeaea; --red-b:#e8a0a0;
+  --grn:#246e18; --grn-p:#eaf5e6; --grn-b:#90cc80;
+  --warn:#9a5a10;
+}
+
+body{font-family:'Barlow',sans-serif;font-weight:300;background:var(--cream);color:var(--ink);min-height:100vh;font-size:14px}
+
+/* ─── TOP BAR ─── */
+.bar{background:var(--ink);height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100;gap:12px}
+.bar-l{display:flex;align-items:center;gap:14px;min-width:0}
+.logo{font-family:'Libre Baskerville',serif;font-size:1.1rem;font-weight:700;color:var(--cream);white-space:nowrap}
+.logo b{color:var(--gold)}
+.pill{background:var(--hide-l);color:var(--ink);font-size:0.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:3px 10px;white-space:nowrap;flex-shrink:0}
+.bar-title{font-size:0.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mist);white-space:nowrap}
+.bar-r{display:flex;gap:8px;flex-shrink:0}
+.btn{font-family:'Barlow',sans-serif;font-size:0.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;border:none;cursor:pointer;white-space:nowrap;transition:background .12s}
+.btn-ghost{background:transparent;color:var(--mist);border:1px solid rgba(255,255,255,.15)}
+.btn-ghost:hover{color:var(--cream);border-color:rgba(255,255,255,.4)}
+.btn-gold{background:var(--gold);color:var(--ink)}
+.btn-gold:hover{background:var(--gold-l)}
+
+/* ─── LAYOUT ─── */
+.wrap{display:grid;grid-template-columns:252px 1fr;min-height:calc(100vh - 50px)}
+
+/* ─── SIDEBAR ─── */
+.side{background:var(--ink2);border-right:1px solid rgba(255,255,255,.05);padding:20px 0;position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto}
+.s-sec{padding:0 16px 16px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:16px}
+.s-lbl{font-size:.54rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mist);margin-bottom:9px}
+.s-fields{display:flex;flex-direction:column;gap:7px}
+.sf label{font-size:.62rem;color:var(--mist);display:block;margin-bottom:2px}
+.sf input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--cream);font-family:'Barlow',sans-serif;font-size:.78rem;padding:6px 8px;outline:none}
+.sf input:focus{border-color:var(--gold)}
+.sf input::placeholder{color:rgba(255,255,255,.2)}
+
+/* op tabs */
+.op-tabs{display:flex;flex-direction:column}
+.op-tab{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .12s}
+.op-tab:hover{background:rgba(255,255,255,.03)}
+.op-tab.on{background:rgba(196,144,96,.1);border-left-color:var(--hide-l)}
+.op-tab-name{font-size:.78rem;color:var(--cream)}
+.op-tab-val{font-size:.66rem;color:var(--mist)}
+.op-tab.on .op-tab-val{color:var(--hide-l)}
+
+/* summary */
+.s-sum{background:rgba(255,255,255,.03);padding:11px}
+.sr{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sr:last-child{border-bottom:none;padding-top:8px}
+.sr-l{font-size:.66rem;color:var(--mist)}
+.sr-v{font-family:'Libre Baskerville',serif;font-size:.8rem;color:var(--cream)}
+.sr-v.hi{color:var(--hide-l);font-size:.9rem}
+
+/* ─── MAIN ─── */
+.main{padding:22px 26px 60px}
+
+/* op panels */
+.op-panel{display:none}
+.op-panel.on{display:block}
+
+/* section tabs */
+.tabs{display:flex;border-bottom:2px solid var(--cream3);margin-bottom:20px}
+.tab{padding:8px 18px;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--stone);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .14s}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--hide);border-bottom-color:var(--hide);font-weight:600}
+
+.sec{display:none}
+.sec.on{display:block}
+
+/* op header */
+.op-hdr{margin-bottom:18px}
+.op-title{font-family:'Libre Baskerville',serif;font-size:1.3rem;font-weight:700;margin-bottom:3px}
+.op-title em{color:var(--hide-l);font-style:italic}
+.op-sub{font-size:.76rem;color:var(--stone);max-width:500px;line-height:1.55}
+
+/* meta row */
+.meta{display:flex;flex-wrap:wrap;gap:10px;background:white;border:1px solid var(--fog);padding:13px 15px;margin-bottom:16px;align-items:flex-end}
+.mf{display:flex;flex-direction:column;gap:3px}
+.mf label{font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--stone)}
+.mf input{background:var(--cream2);border:1px solid var(--cream3);font-family:'Barlow',sans-serif;font-size:.8rem;color:var(--ink);padding:6px 8px;outline:none;width:112px}
+.mf input:focus{border-color:var(--gold)}
+.mf-u{font-size:.66rem;color:var(--stone);padding-bottom:8px}
+
+/* cost table */
+.ctbl{width:100%;border-collapse:collapse;margin-bottom:16px}
+.ctbl thead tr{background:var(--ink);color:var(--cream)}
+.ctbl thead th{padding:8px 11px;font-size:.56rem;letter-spacing:.11em;text-transform:uppercase;font-weight:500;text-align:left}
+.ctbl thead th:not(:first-child){text-align:right}
+.ctbl tbody tr{border-bottom:1px solid #ede8dc;background:white}
+.ctbl tbody tr:nth-child(even){background:#fdfaf3}
+.ctbl tbody tr:hover{background:var(--gold-p)}
+.ctbl td{padding:0}
+.c-lbl{padding:9px 11px;font-size:.78rem;color:var(--ink);white-space:nowrap}
+.c-ico{margin-right:6px}
+.c-in{padding:4px 5px;text-align:right}
+.c-in input{width:106px;text-align:right;background:transparent;border:1px solid transparent;font-family:'Barlow',sans-serif;font-size:.78rem;color:var(--ink);padding:5px 7px;outline:none;transition:border .12s,background .12s}
+.c-in input:focus{border-color:var(--gold);background:var(--gold-p)}
+.c-in input::placeholder{color:#ccc}
+.c-in input[readonly]{color:var(--stone);font-style:italic;cursor:default}
+.c-cm{padding:9px 11px;text-align:right;font-size:.78rem;color:#bbb;min-width:104px}
+.c-cm.v{color:var(--ink);font-weight:500}
+.ctbl tfoot tr{background:var(--ink2);color:var(--cream)}
+.ctbl tfoot td{padding:10px 11px}
+.ft-l{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mist)}
+.ft-v{font-family:'Libre Baskerville',serif;font-size:.94rem;color:var(--gold-l);text-align:right;font-weight:700}
+
+/* breakeven strip */
+.be-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--fog);overflow:hidden;margin-bottom:16px}
+.be-blk{padding:15px 16px;background:white;border-right:1px solid var(--fog)}
+.be-blk:last-child{border-right:none;background:var(--ink)}
+.be-lbl{font-size:.54rem;letter-spacing:.12em;text-transform:uppercase;color:var(--stone);margin-bottom:3px}
+.be-blk:last-child .be-lbl{color:var(--mist)}
+.be-val{font-family:'Libre Baskerville',serif;font-size:1.3rem;font-weight:700;color:var(--ink);line-height:1;margin-bottom:2px}
+.be-blk:last-child .be-val{color:var(--hide-l)}
+.be-u{font-size:.66rem;color:var(--stone)}
+.be-blk:last-child .be-u{color:var(--mist)}
+.be-tgt{display:flex;align-items:center;gap:6px;margin-top:8px}
+.be-tgt label{font-size:.6rem;color:var(--mist);white-space:nowrap}
+.be-tgt input{width:78px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:var(--cream);font-family:'Barlow',sans-serif;font-size:.78rem;padding:4px 6px;outline:none}
+.be-tgt input:focus{border-color:var(--gold)}
+.be-net{font-size:.72rem;color:var(--mist);margin-top:5px}
+.be-net span{font-weight:600}
+
+/* risk bar */
+.risk{margin-bottom:16px}
+.risk-lbl{font-size:.56rem;letter-spacing:.13em;text-transform:uppercase;color:var(--stone);margin-bottom:6px}
+.risk-track{height:10px;background:linear-gradient(90deg,#246e18,#c8a032,#a82020);border-radius:5px;position:relative;margin-bottom:4px}
+.risk-pin{width:3px;height:19px;background:var(--ink);position:absolute;top:-5px;transform:translateX(-50%);border-radius:1px;transition:left .3s}
+.risk-pin::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--ink)}
+.risk-ends{display:flex;justify-content:space-between;font-size:.58rem;color:var(--stone)}
+.risk-msg{margin-top:6px;padding:8px 12px;font-size:.76rem;font-weight:500;line-height:1.45}
+.risk-msg.g{background:var(--grn-p);color:var(--grn);border-left:3px solid var(--grn)}
+.risk-msg.w{background:#fef5e0;color:var(--warn);border-left:3px solid var(--warn)}
+.risk-msg.r{background:var(--red-p);color:var(--red);border-left:3px solid var(--red)}
+
+/* notes */
+.notes{margin-bottom:16px}
+.notes label{font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:var(--stone);display:block;margin-bottom:5px}
+.notes textarea{width:100%;background:white;border:1px solid var(--fog);font-family:'Barlow',sans-serif;font-size:.78rem;color:var(--ink);padding:10px 12px;resize:vertical;min-height:68px;outline:none;line-height:1.55}
+.notes textarea:focus{border-color:var(--gold)}
+
+/* ─── LRP ─── */
+.lrp-hero{background:var(--ink);border-left:4px solid var(--hide-l);padding:16px 20px;margin-bottom:16px}
+.lrp-hero h3{font-family:'Libre Baskerville',serif;font-size:1rem;font-weight:700;color:var(--cream);margin-bottom:5px}
+.lrp-hero p{font-size:.76rem;color:var(--mist);line-height:1.6}
+
+.lrp-3col{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--fog);overflow:hidden;margin-bottom:16px}
+.l3{padding:14px 14px;background:white;border-right:1px solid var(--fog)}
+.l3:last-child{border-right:none}
+.l3-ico{font-size:1.1rem;margin-bottom:5px}
+.l3-title{font-family:'Libre Baskerville',serif;font-size:.84rem;font-weight:700;margin-bottom:4px}
+.l3-desc{font-size:.72rem;color:var(--stone);line-height:1.5}
+
+.lrp-inputs{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--fog);overflow:hidden;margin-bottom:16px}
+.li{padding:13px 13px;background:white;border-right:1px solid var(--fog)}
+.li:last-child{border-right:none}
+.li-lbl{font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);margin-bottom:4px}
+.li input{width:100%;background:var(--cream2);border:1px solid var(--cream3);font-family:'Barlow',sans-serif;font-size:.8rem;color:var(--ink);padding:7px 8px;outline:none}
+.li input:focus{border-color:var(--hide-l)}
+.li-hint{font-size:.62rem;color:var(--stone);margin-top:3px;font-style:italic;line-height:1.35}
+
+/* coverage cards */
+.cov-lbl{font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--stone);margin-bottom:8px}
+.cov-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+
+.cov-card{
+  background:white;
+  border:2px solid var(--cream3);
+  padding:12px 8px 10px;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color .18s,background .18s;
+  position:relative;
+  min-height:100px;
+}
+.cov-card:hover{border-color:var(--hide-l);background:var(--hide-p)}
+/* selected neutral */
+.cov-card.sel{border-color:var(--hide);background:var(--hide-p)}
+.cov-card.sel::after{content:'✓';position:absolute;top:5px;right:7px;font-size:.6rem;color:var(--hide);font-weight:700}
+/* protected: floor covers costs + premium */
+.cov-card.ok{border-color:var(--grn) !important;background:var(--grn-p) !important}
+.cov-card.ok.sel{background:#ddf0d8 !important}
+.cov-card.ok::after{color:var(--grn) !important}
+/* at-risk: floor does NOT cover costs + premium */
+.cov-card.bad{border-color:var(--red) !important;background:var(--red-p) !important}
+.cov-card.bad.sel{background:#f5d8d8 !important}
+.cov-card.bad::after{color:var(--red) !important}
+
+.cov-pct{font-family:'Libre Baskerville',serif;font-size:1.2rem;font-weight:700;color:var(--ink);line-height:1;margin-bottom:3px}
+.cov-card.ok  .cov-pct{color:var(--grn)}
+.cov-card.bad .cov-pct{color:var(--red)}
+.cov-floor{font-size:.66rem;color:var(--stone);margin-bottom:4px}
+.cov-loss{font-size:.68rem;font-weight:600;margin-bottom:2px;color:var(--stone)}
+.cov-card.ok  .cov-loss{color:var(--grn)}
+.cov-card.bad .cov-loss{color:var(--red)}
+.cov-net{font-size:.6rem;font-style:italic;color:var(--stone)}
+.cov-card.ok  .cov-net{color:var(--grn)}
+.cov-card.bad .cov-net{color:var(--red)}
+
+/* comparison */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.cmp-col{border:1px solid var(--fog);overflow:hidden}
+.cmp-head{padding:11px 15px;font-family:'Libre Baskerville',serif;font-size:.86rem;font-weight:700;display:flex;align-items:center;gap:7px}
+.cmp-head.un{background:#faeae0;color:var(--red)}
+.cmp-head.ins{background:var(--grn-p);color:var(--grn)}
+.cmp-body{background:white}
+.cmp-row{display:flex;justify-content:space-between;padding:8px 15px;border-bottom:1px solid #f0e8d8;font-size:.77rem}
+.cmp-row:last-child{border-bottom:none}
+.cmp-rl{color:var(--stone)}
+.cmp-rv{font-weight:500;color:var(--ink)}
+.cmp-rv.pos{color:var(--grn)}
+.cmp-rv.neg{color:var(--red)}
+.cmp-foot{padding:10px 15px;font-family:'Libre Baskerville',serif;font-size:.9rem;font-weight:700;display:flex;justify-content:space-between}
+.cmp-foot.un{background:#fdf0e8;color:var(--red)}
+.cmp-foot.ins{background:#eef8e8;color:var(--grn)}
+
+/* scenario bars */
+.scen{margin-bottom:16px}
+.scen-lbl{font-size:.56rem;letter-spacing:.13em;text-transform:uppercase;color:var(--stone);margin-bottom:9px}
+.scen-bars{display:flex;flex-direction:column;gap:5px}
+.scen-row{display:grid;grid-template-columns:108px 1fr 124px;gap:8px;align-items:center}
+.scen-name{font-size:.72rem;color:var(--ink);text-align:right}
+.scen-track{height:24px;background:var(--cream3);position:relative;overflow:hidden;border-radius:1px}
+.s-un{height:100%;position:absolute;top:0;left:0;transition:width .3s}
+.s-in{height:12px;position:absolute;bottom:0;left:0;transition:width .3s}
+.scen-vals{font-size:.67rem;font-weight:600;display:flex;flex-direction:column;gap:1px}
+.scen-legend{display:flex;gap:14px;margin-top:7px}
+.sl{display:flex;align-items:center;gap:5px;font-size:.62rem;color:var(--stone)}
+.sl-sw{width:12px;height:7px;border-radius:1px}
+
+/* ─── COST BUILDER WIZARD ─── */
+.wizard{border:1px solid var(--hide-l);overflow:hidden;margin-bottom:16px;border-radius:1px}
+.wizard-hdr{background:var(--ink2);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.wizard-hdr:hover{background:var(--ink3)}
+.wizard-title{font-family:'Libre Baskerville',serif;font-size:.88rem;font-weight:700;color:var(--cream);display:flex;align-items:center;gap:8px}
+.wizard-title span{font-family:'Barlow',sans-serif;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;background:var(--hide-l);color:var(--ink);padding:2px 8px;font-weight:700}
+.wizard-toggle{font-size:.7rem;color:var(--mist);display:flex;align-items:center;gap:6px}
+.wizard-arrow{transition:transform .2s;display:inline-block}
+.wizard-arrow.open{transform:rotate(180deg)}
+.wizard-body{display:none;background:var(--cream);padding:16px}
+.wizard-body.open{display:block}
+
+.wiz-section{margin-bottom:20px}
+.wiz-section:last-child{margin-bottom:0}
+.wiz-sec-title{font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--hide);font-weight:700;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--cream3)}
+
+/* feed ingredient grid */
+.feed-grid{display:grid;grid-template-columns:1fr 120px 100px 110px;gap:0;border:1px solid var(--fog);overflow:hidden;margin-bottom:8px}
+.feed-grid-hdr{background:var(--ink);color:var(--cream);font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px}
+.feed-row{display:contents}
+.feed-row > div{background:white;border-top:1px solid var(--fog);padding:5px 8px;display:flex;align-items:center}
+.feed-row:nth-child(odd) > div{background:#fdfaf3}
+.feed-row > div:not(:first-child){border-left:1px solid var(--fog)}
+.feed-cell-lbl{font-size:.74rem;color:var(--ink)}
+.feed-in{width:100%;background:transparent;border:none;font-family:'Barlow',sans-serif;font-size:.78rem;color:var(--ink);padding:3px 4px;outline:none;text-align:right}
+.feed-in:focus{background:var(--gold-p)}
+.feed-total-row{display:grid;grid-template-columns:1fr 120px 100px 110px;background:var(--ink2)}
+.feed-total-row > div{padding:7px 10px;font-size:.75rem}
+.feed-total-lbl{color:var(--mist);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase}
+.feed-total-val{color:var(--gold-l);font-family:'Libre Baskerville',serif;font-weight:700;text-align:right}
+.feed-custom-rows{display:contents}
+
+/* interest builder */
+.int-grid{display:grid;grid-template-columns:1fr 140px;gap:8px 14px;align-items:center;margin-bottom:10px}
+.int-lbl{font-size:.76rem;color:var(--ink)}
+.int-sub{font-size:.63rem;color:var(--stone);margin-top:1px}
+.int-in{background:var(--cream2);border:1px solid var(--cream3);font-family:'Barlow',sans-serif;font-size:.8rem;color:var(--ink);padding:6px 8px;outline:none;width:100%;text-align:right}
+.int-in:focus{border-color:var(--hide-l)}
+.int-in[readonly]{color:var(--stone);font-style:italic;background:var(--fog)}
+.int-result{background:var(--ink2);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+.int-result-lbl{font-size:.66rem;color:var(--mist);letter-spacing:.08em;text-transform:uppercase}
+.int-result-val{font-family:'Libre Baskerville',serif;font-size:1rem;color:var(--hide-l);font-weight:700}
+
+/* pasture builder */
+.past-grid{display:grid;grid-template-columns:1fr 140px;gap:8px 14px;align-items:center;margin-bottom:10px}
+.past-result{background:var(--ink2);padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.past-result-lbl{font-size:.66rem;color:var(--mist);letter-spacing:.08em;text-transform:uppercase}
+.past-result-val{font-family:'Libre Baskerville',serif;font-size:1rem;color:var(--hide-l);font-weight:700}
+
+/* death loss builder */
+.death-grid{display:grid;grid-template-columns:1fr 140px;gap:8px 14px;align-items:center;margin-bottom:10px}
+.death-result{background:var(--ink2);padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+
+/* apply button */
+.wiz-apply{margin-top:14px;display:flex;align-items:center;gap:10px}
+.btn-apply{font-family:'Barlow',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:9px 20px;border:none;cursor:pointer;background:var(--hide);color:var(--cream);transition:background .12s}
+.btn-apply:hover{background:var(--hide-l);color:var(--ink)}
+.wiz-apply-note{font-size:.66rem;color:var(--stone);font-style:italic}
+.wiz-applied{font-size:.66rem;color:var(--grn);font-weight:600;display:none}
+
+/* ─── COW/CALF WIZARD (Spring Calves) ─── */
+.cc-wizard{border:2px solid var(--grass-l);overflow:hidden;margin-bottom:16px}
+.cc-wizard-hdr{background:var(--ink2);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.cc-wizard-hdr:hover{background:var(--ink3)}
+.cc-wizard-title{font-family:'Libre Baskerville',serif;font-size:.92rem;font-weight:700;color:var(--cream);display:flex;align-items:center;gap:10px}
+.cc-wizard-title span{font-family:'Barlow',sans-serif;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;background:var(--grass-l);color:var(--ink);padding:2px 9px;font-weight:700}
+.cc-wizard-toggle{font-size:.7rem;color:var(--mist);display:flex;align-items:center;gap:6px}
+.cc-arrow{transition:transform .2s;display:inline-block}
+.cc-arrow.open{transform:rotate(180deg)}
+.cc-wizard-body{display:none;background:var(--cream)}
+.cc-wizard-body.open{display:block}
+.cc-result-bar{background:var(--ink);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-top:2px solid var(--grass-l)}
+.cc-result-lbl{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mist)}
+.cc-result-val{font-family:'Libre Baskerville',serif;font-size:1.3rem;font-weight:700;color:var(--gold-l)}
+.cc-result-sub{font-size:.64rem;color:var(--mist);margin-top:2px}
+.cc-section{border-bottom:1px solid var(--fog);background:white}
+.cc-section:last-child{border-bottom:none}
+.cc-section-hdr{background:#f7f9f4;padding:10px 16px;display:flex;align-items:center;gap:10px}
+.cc-section-ico{font-size:1rem}
+.cc-section-title{font-family:'Libre Baskerville',serif;font-size:.88rem;font-weight:700;flex:1}
+.cc-section-result{font-size:.72rem;color:var(--grass);font-weight:600;min-width:120px;text-align:right}
+.cc-body{padding:14px 16px}
+.cc-grid2{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center}
+.cc-grid3{display:grid;grid-template-columns:1fr 120px 110px;gap:8px;align-items:center}
+.cc-grid4{display:grid;grid-template-columns:1fr 120px 120px 110px;gap:8px;align-items:center}
+.cc-grid5{display:grid;grid-template-columns:1fr 90px 90px 90px 110px;gap:8px;align-items:center}
+.cc-lbl{font-size:.74rem;color:var(--ink);line-height:1.3}
+.cc-lbl small{display:block;font-size:.64rem;color:var(--stone);margin-top:1px}
+.cc-hdr{font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);text-align:right}
+.cc-in{background:var(--cream2);border:1px solid var(--cream3);font-family:'Barlow',sans-serif;font-size:.8rem;color:var(--ink);padding:6px 8px;outline:none;text-align:right;width:100%}
+.cc-in:focus{border-color:var(--grass-l)}
+.cc-in::placeholder{color:#bbb}
+.cc-in[readonly]{color:var(--stone);font-style:italic;background:var(--fog)}
+.cc-computed{font-family:'Libre Baskerville',serif;font-size:.86rem;font-weight:700;color:var(--grass);text-align:right;padding:6px 0}
+.cc-formula{font-size:.62rem;color:var(--stone);font-style:italic;margin-top:4px;line-height:1.5}
+.cc-path{background:var(--cream2);padding:8px 10px;margin-bottom:8px;border-left:3px solid var(--grass-l)}
+.cc-path-b{background:var(--cream2);padding:8px 10px;border-left:3px solid var(--sky)}
+.cc-path-lbl{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:6px}
+.cc-total-bar{background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:10px 16px}
+.cc-total-lbl{font-size:.6rem;letter-spacing:.11em;text-transform:uppercase;color:var(--mist)}
+.cc-total-val{font-family:'Libre Baskerville',serif;font-size:1.1rem;font-weight:700;color:var(--gold-l)}
+.cc-total-sub{font-size:.64rem;color:var(--mist);margin-top:1px}
+.cc-auto-note{background:var(--grass-p);border-top:1px solid var(--fog);padding:9px 16px;font-size:.7rem;color:var(--grass);font-style:italic}
+.cc-depr-cols{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.cc-depr-col{padding:16px 18px;border-right:1px solid var(--fog)}
+.cc-depr-col:last-child{border-right:none}
+.cc-depr-result{margin-top:12px;padding:11px 14px;background:var(--ink);display:flex;align-items:center;justify-content:space-between}
+.cc-sky{color:var(--sky)}
+.cc-misc-row{display:grid;grid-template-columns:1fr 120px 110px;gap:8px;align-items:center;margin-bottom:6px}
+.cc-misc-name{background:var(--cream2);border:1px solid var(--cream3);font-family:'Barlow',sans-serif;font-size:.78rem;color:var(--ink);padding:6px 8px;outline:none;width:100%}
+.cc-misc-name::placeholder{color:#bbb}
+.cc-summary-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:var(--ink3);border-top:2px solid var(--gold)}
+.cc-sum-blk{padding:12px 14px;border-right:1px solid rgba(255,255,255,.08)}
+.cc-sum-blk:last-child{border-right:none}
+.cc-sum-lbl{font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);margin-bottom:3px}
+.cc-sum-val{font-family:'Libre Baskerville',serif;font-size:1rem;font-weight:700;color:var(--gold-l)}
+
+/* ─── LRP LIVE QUOTE FETCHER ─── */
+.lrp-fetch-panel{background:var(--ink2);border:2px solid var(--gold);margin-bottom:20px;overflow:hidden}
+.lrp-fetch-hdr{background:var(--ink);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lrp-fetch-title{font-family:'Libre Baskerville',serif;font-size:.95rem;font-weight:700;color:var(--cream);display:flex;align-items:center;gap:10px}
+.lrp-fetch-badge{font-family:'Barlow',sans-serif;font-size:.54rem;letter-spacing:.12em;text-transform:uppercase;background:var(--gold);color:var(--ink);padding:2px 9px;font-weight:700}
+.lrp-fetch-status{font-size:.66rem;color:var(--mist);display:flex;align-items:center;gap:6px}
+.lrp-status-dot{width:8px;height:8px;border-radius:50%;background:var(--stone);flex-shrink:0;transition:background .3s}
+.lrp-status-dot.loading{background:var(--gold);animation:pulse 1s infinite}
+.lrp-status-dot.ok{background:var(--grn)}
+.lrp-status-dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.lrp-fetch-body{padding:16px 18px}
+.lrp-fetch-selectors{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:14px}
+.lrp-date-hint{font-size:.62rem;color:var(--hide-l);margin-top:3px;font-style:italic}
+.lrp-sel-group{display:flex;flex-direction:column;gap:4px}
+.lrp-sel-lbl{font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mist)}
+.lrp-sel{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);color:var(--cream);font-family:'Barlow',sans-serif;font-size:.8rem;padding:7px 10px;outline:none;cursor:pointer;width:100%}
+.lrp-sel:focus{border-color:var(--gold)}
+.lrp-sel option{background:var(--ink2);color:var(--cream)}
+.btn-fetch{font-family:'Barlow',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:9px 20px;border:none;cursor:pointer;background:var(--gold);color:var(--ink);white-space:nowrap;transition:background .12s;height:36px}
+.btn-fetch:hover{background:var(--gold-l)}
+.btn-fetch:disabled{background:var(--stone);color:var(--mist);cursor:not-allowed}
+
+/* Results table */
+.lrp-results-wrap{overflow-x:auto}
+.lrp-results-tbl{width:100%;border-collapse:collapse;font-size:.76rem}
+.lrp-results-tbl thead tr{background:var(--ink3)}
+.lrp-results-tbl thead th{padding:7px 10px;color:var(--mist);font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;font-weight:500;text-align:left;white-space:nowrap}
+.lrp-results-tbl thead th:not(:first-child){text-align:right}
+.lrp-results-tbl tbody tr{border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .1s}
+.lrp-results-tbl tbody tr:hover{background:rgba(196,144,96,.12)}
+.lrp-results-tbl tbody tr.lrp-row-sel{background:rgba(196,144,96,.2);outline:2px solid var(--gold) inset}
+.lrp-results-tbl td{padding:8px 10px;color:var(--cream);white-space:nowrap}
+.lrp-results-tbl td:not(:first-child){text-align:right;font-family:'Libre Baskerville',serif}
+.lrp-row-weeks{font-weight:600;color:var(--gold-l)}
+.lrp-row-end{color:var(--mist);font-size:.72rem}
+.lrp-row-eev{color:var(--gold-l)}
+.lrp-row-prem{color:var(--cream)}
+.lrp-row-net{color:var(--grn-b)}
+.lrp-row-sub{color:var(--mist);font-size:.68rem}
+.lrp-select-hint{font-size:.64rem;color:var(--hide-l);font-style:italic;padding:4px 2px 0}
+
+/* Applied bar */
+.lrp-applied-bar{background:var(--grass);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;display:none}
+.lrp-applied-bar.show{display:flex}
+.lrp-applied-lbl{font-size:.7rem;color:var(--grn-p);font-weight:600}
+.lrp-applied-vals{font-size:.76rem;color:white;font-family:'Libre Baskerville',serif}
+
+/* No-data / error states */
+.lrp-fetch-msg{padding:20px;text-align:center;color:var(--mist);font-size:.8rem;font-style:italic}
+.lrp-fetch-msg.err{color:var(--red-b)}
+
+/* ─── LIVE COVERAGE CARDS (data-driven) ─── */
+.cov-card-live{position:relative;overflow:hidden}
+.cov-card-live .cov-prem{font-size:.7rem;color:var(--mist);margin-top:2px}
+.cov-card-live .cov-prem b{color:var(--cream);font-size:.82rem}
+.cov-card-live .cov-sub-saved{font-size:.62rem;color:var(--hide-l);margin-top:1px}
+.cov-card-live .cov-prem-hd{font-size:.68rem;color:var(--gold-l);margin-top:3px;font-weight:600}
+.cov-card-live.loading{opacity:.5}
+.cov-recommended-badge{position:absolute;top:0;right:0;background:var(--gold);color:var(--ink);font-size:.48rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:820px){
+  .wrap{grid-template-columns:1fr}
+  .side{position:static;height:auto}
+  .be-strip{grid-template-columns:1fr}
+  .be-blk{border-right:none;border-bottom:1px solid var(--fog)}
+  .be-blk:last-child{border-bottom:none}
+  .cov-row{grid-template-columns:repeat(3,1fr)}
+  .cmp{grid-template-columns:1fr}
+  .lrp-inputs{grid-template-columns:1fr 1fr}
+  .lrp-3col{grid-template-columns:1fr}
+  .l3{border-right:none;border-bottom:1px solid var(--fog)}
+}
+@media print{
+  .bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .side{display:none}
+  .wrap{grid-template-columns:1fr}
+  .op-panel,.sec{display:block !important}
+  .ctbl thead tr,.ctbl tfoot tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bar-r{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="bar">
+  <div class="bar-l">
+    <div class="logo"><b>Agro</b>wise</div>
+    <div class="pill">Step 1 · Feeder Cattle</div>
+    <div class="bar-title">Input Cost &amp; LRP Analysis</div>
+  </div>
+  <div class="bar-r">
+    <button class="btn btn-ghost" onclick="clearAll()">Clear All</button>
+    <button class="btn btn-gold"  onclick="window.print()">Print / Save PDF</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="s-sec">
+      <div class="s-lbl">Producer Information</div>
+      <div class="s-fields">
+        <div class="sf"><label>Producer Name</label><input id="p-name"   type="text" placeholder="e.g. Johnson Ranch"></div>
+        <div class="sf"><label>Operation Type</label><input id="p-type"  type="text" placeholder="e.g. Stocker / Cow-Calf"></div>
+        <div class="sf"><label>County / State</label><input id="p-loc"   type="text" placeholder="e.g. Haskell Co., KS"></div>
+        <div class="sf"><label>Crop Year</label>     <input id="p-year"  type="text" placeholder="e.g. 2025"></div>
+        <div class="sf"><label>Agent Name</label>    <input id="p-agent" type="text" placeholder="Agrowise Agent"></div>
+        <div class="sf"><label>Date</label>          <input id="p-date"  type="date"></div>
+      </div>
+    </div>
+
+    <div class="s-sec">
+      <div class="s-lbl">Operation Type</div>
+      <div class="op-tabs" id="op-tabs"></div>
+    </div>
+
+    <div class="s-sec">
+      <div class="s-lbl">All Operations Summary</div>
+      <div class="s-sum" id="s-sum"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="main"></main>
+</div>
+
+<footer style="background:var(--ink2);color:var(--mist);padding:14px 24px;display:flex;justify-content:space-between;font-size:.66rem;letter-spacing:.04em;flex-wrap:wrap;gap:8px">
+  <span><strong style="color:var(--gold);font-weight:500">Agrowise</strong> — Feeder Cattle Input Cost &amp; LRP Calculator</span>
+  <span>Step 1 · Guaranteed Financial Insight · Field-First Method</span>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════
+   DATA DEFINITIONS
+═══════════════════════════════════════════ */
+const OPS = [
+  {id:'stocker',    em:'🐄', name:'Stocker / Grass Cattle',
+   desc:'Buy light stockers, graze on grass, sell heavier. Risk lies in purchase price, grazing costs, and the feeder cattle market at sale time.',
+   daysLabel:'Days on Grass'},
+  {id:'background', em:'🌱', name:'Background / Grower',
+   desc:'Receive lighter cattle, grow on a mix of forage and supplemental feed before moving to a feedlot or direct marketing.',
+   daysLabel:'Days on Feed'},
+  {id:'feedlot',    em:'🏗️', name:'Feedlot Finishing',
+   desc:'Buy feeder cattle, finish on a high-energy ration, sell as fat cattle. High cost-of-gain with concentrated price risk at sale.',
+   daysLabel:'Days on Feed'},
+  {id:'springcalf', em:'🌱', name:'Spring Calves',
+   desc:'Cow/calf spring calving operation. Calves born in spring, weaned and sold in fall. Cost basis built from the Cow/Calf Cost of Production Wizard.',
+   daysLabel:'Days on Grass', ccWizard:true},
+  {id:'fallcalf',   em:'🍂', name:'Fall Calves',
+   desc:'Cow/calf fall calving operation. Calves born in fall, wintered on the cow, weaned and sold in spring/summer. Cost basis built from the Cow/Calf Cost of Production Wizard.',
+   daysLabel:'Days on Grass', ccWizard:true},
+];
+
+const CATS = [
+  {key:'purchase', ico:'🐄', lbl:'Purchase Price of Cattle',   auto:true,  tip:'Auto-calculated: head × buy weight × buy price ÷ 100'},
+  {key:'feed',     ico:'🌾', lbl:'Feed Costs (hay, silage, grain)', tip:'Total feed cost per head for the feeding period'},
+  {key:'pasture',  ico:'🏡', lbl:'Pasture / Grazing Lease',    tip:'Per-head share of pasture or grazing lease cost'},
+  {key:'vet',      ico:'💉', lbl:'Veterinary & Medicine',      tip:'Processing, vaccines, treatments per head'},
+  {key:'trucking', ico:'🚛', lbl:'Trucking & Marketing Fees',  tip:'Buy/sell trucking, commission, yardage at sale'},
+  {key:'interest', ico:'💰', lbl:'Interest / Cost of Capital', tip:'Interest on purchase price + operating costs for the period'},
+  {key:'labor',    ico:'👤', lbl:'Yardage / Labor',            tip:'Daily yardage or per-head labor allocation'},
+  {key:'death',    ico:'📉', lbl:'Death Loss Allowance',       tip:'Estimated death loss as a $/head cost (typically 1–2% of purchase)'},
+  {key:'misc',     ico:'📦', lbl:'Miscellaneous / Other',      tip:'Bedding, utilities, ear tags, other costs'},
+];
+
+const COV_PCTS   = [70, 80, 90, 95, 100];
+const activeCov  = {};  // {opId: pct}
+OPS.forEach(o => activeCov[o.id] = 90);
+
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+const $  = id  => document.getElementById(id);
+const $$ = sel => document.querySelectorAll(sel);
+
+function money(n, dec=2){
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  const abs = Math.abs(n).toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return (n<0?'-$':'$')+abs;
+}
+
+function numIn(id){ return parseFloat($(id)?.value)||0; }
+
+/* ═══════════════════════════════════════════
+   BUILD DOM
+═══════════════════════════════════════════ */
+function build(){
+  // Sidebar op tabs
+  $('op-tabs').innerHTML = OPS.map((o,i)=>`
+    <div class="op-tab${i===0?' on':''}" onclick="switchOp('${o.id}')" id="optab-${o.id}">
+      <span class="op-tab-name">${o.em} ${o.name}</span>
+      <span class="op-tab-val"  id="tabval-${o.id}">—</span>
+    </div>`).join('');
+
+  // Sidebar summary
+  $('s-sum').innerHTML =
+    OPS.map(o=>`<div class="sr"><span class="sr-l">${o.em} ${o.name.split(' ')[0]+' '+o.name.split(' ')[1]} ($/hd)</span><span class="sr-v" id="sumv-${o.id}">—</span></div>`).join('')+
+    `<div class="sr"><span class="sr-l">Lowest breakeven ($/cwt)</span><span class="sr-v hi" id="sumv-be">—</span></div>`;
+
+  // Main op panels
+  $('main').innerHTML = OPS.map((o,i)=>`
+<div class="op-panel${i===0?' on':''}" id="op-${o.id}">
+  <div class="op-hdr">
+    <div class="op-title">${o.em} <em>${o.name}</em></div>
+    <div class="op-sub">${o.desc}</div>
+  </div>
+  <div class="tabs">
+    <div class="tab on"  onclick="switchSec('${o.id}','costs',this)">📋 Input Costs</div>
+    <div class="tab"     onclick="switchSec('${o.id}','lrp',this)"  >🛡️ LRP Analysis</div>
+  </div>
+
+  <!-- ── COSTS ── -->
+  <div class="sec on" id="${o.id}-costs">
+    ${o.ccWizard ? `
+    <!-- COW/CALF OP: meta has only sell-side fields; buy-side comes from wizard -->
+    <div class="meta">
+      <div class="mf"><label>Sell Weight (lbs)</label>
+        <input type="number" id="${o.id}-sellwt" placeholder="0" min="0" oninput="recalc('${o.id}')"></div>
+      <div class="mf"><label>${o.daysLabel}</label>
+        <input type="number" id="${o.id}-days"   placeholder="0" min="0" oninput="recalc('${o.id}')"></div>
+      <input type="hidden" id="${o.id}-head" value="">
+      <input type="hidden" id="${o.id}-buywt" value="">
+      <input type="hidden" id="${o.id}-buyprice" value="">
+    </div>
+
+    <!-- COW/CALF COST WIZARD -->
+    <div class="cc-wizard">
+      <div class="cc-wizard-hdr" onclick="toggleCCWizard('${o.id}')">
+        <div class="cc-wizard-title">🐄 Cow/Calf Cost of Production Wizard <span>Sets Purchase Cost &amp; Head Count</span></div>
+        <div class="cc-wizard-toggle">Click to expand <span class="cc-arrow" id="${o.id}-cc-arrow">▼</span></div>
+      </div>
+      <div class="cc-wizard-body" id="${o.id}-cc-wzbody">
+
+        <!-- HERD SETUP -->
+        <div class="cc-section">
+          <div class="cc-section-hdr"><span class="cc-section-ico">📋</span><span class="cc-section-title">Herd Setup</span></div>
+          <div class="cc-body">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+              <div>
+                <div class="cc-hdr" style="text-align:left;margin-bottom:4px">Number of Cows</div>
+                <input class="cc-in" type="number" id="${o.id}-cc-cows" placeholder="e.g. 150" min="0" oninput="recalcCC('${o.id}')">
+              </div>
+              <div>
+                <div class="cc-hdr" style="text-align:left;margin-bottom:4px">Calf Crop %</div>
+                <input class="cc-in" type="number" id="${o.id}-cc-calvepct" placeholder="e.g. 88" min="0" max="100" oninput="recalcCC('${o.id}')">
+              </div>
+              <div>
+                <div class="cc-hdr" style="text-align:left;margin-bottom:4px">Death Loss at Birth %</div>
+                <input class="cc-in" type="number" id="${o.id}-cc-deathloss" placeholder="e.g. 2" min="0" max="20" step="0.5" oninput="recalcCC('${o.id}')">
+              </div>
+              <div>
+                <div class="cc-hdr" style="text-align:left;margin-bottom:4px">Calves Sold (calc)</div>
+                <div style="font-family:'Libre Baskerville',serif;font-size:1.1rem;font-weight:700;color:var(--grass);padding:7px 0" id="${o.id}-cc-calves-display">—</div>
+              </div>
+            </div>
+            <div class="cc-formula" style="margin-top:8px">Cows × Calf Crop% × (1 − Death Loss%) = Calves available to sell. This also sets the Head Count for the operation above.</div>
+          </div>
+        </div>
+
+        <!-- COW & BULL DEPRECIATION -->
+        <div class="cc-section">
+          <div class="cc-section-hdr"><span class="cc-section-ico">🐄</span><span class="cc-section-title">Cow &amp; Bull Depreciation / Replacement</span><span class="cc-section-result" id="${o.id}-cc-depr-result-sec">—</span></div>
+          <div class="cc-body">
+            <div class="cc-depr-cols">
+              <div class="cc-depr-col">
+                <div style="font-family:'Libre Baskerville',serif;font-size:.88rem;font-weight:700;margin-bottom:3px">Cow Depreciation</div>
+                <div class="cc-formula" style="margin-bottom:10px">Even when cows are "paid for," they lose value every year that must be recovered through calf sales.</div>
+                <div class="cc-grid2" style="margin-bottom:6px">
+                  <div class="cc-lbl">Replacement heifer/bred cow cost today<small>What it costs to replace one cow</small></div>
+                  <input class="cc-in" type="number" id="${o.id}-cc-depr-cow-replace" placeholder="e.g. 2800" min="0" step="10" oninput="calcCCDepr('${o.id}')">
+                </div>
+                <div class="cc-grid2" style="margin-bottom:6px">
+                  <div class="cc-lbl">Cull cow salvage value<small>What she sells for at market</small></div>
+                  <input class="cc-in" type="number" id="${o.id}-cc-depr-cow-salvage" placeholder="e.g. 1200" min="0" step="10" oninput="calcCCDepr('${o.id}')">
+                </div>
+                <div class="cc-grid2" style="margin-bottom:6px">
+                  <div class="cc-lbl">Years kept before culling<small>Productive years in the herd</small></div>
+                  <input class="cc-in" type="number" id="${o.id}-cc-depr-cow-years" placeholder="e.g. 7" min="1" max="20" oninput="calcCCDepr('${o.id}')">
+                </div>
+                <div class="cc-depr-result">
+                  <div><div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mist)">Cow Depr / Cow / Year</div><div style="font-size:.62rem;color:var(--mist)">(Replace − Salvage) ÷ Years</div></div>
+                  <div style="font-family:'Libre Baskerville',serif;font-size:1.1rem;font-weight:700;color:var(--gold-l)" id="${o.id}-cc-depr-cow-result">—</div>
+                </div>
+              </div>
+              <div class="cc-depr-col">
+                <div style="font-family:'Libre Baskerville',serif;font-size:.88rem;font-weight:700;margin-bottom:3px">Bull Cost / Depreciation</div>
+                <div class="cc-formula" style="margin-bottom:10px">Bull purchase price spread over years of service, allocated per cow covered.</div>
+                <div class="cc-grid2" style="margin-bottom:6px">
+                  <div class="cc-lbl">Average bull purchase price<small>What your bulls cost on average</small></div>
+                  <input class="cc-in" type="number" id="${o.id}-cc-depr-bull-price" placeholder="e.g. 5500" min="0" step="100" oninput="calcCCDepr('${o.id}')">
+                </div>
+                <div class="cc-grid2" style="margin-bottom:6px">
+                  <div class="cc-lbl">Years of service per bull<small>How long you keep him</small></div>
+                  <input class="cc-in" type="number" id="${o.id}-cc-depr-bull-years" placeholder="e.g. 4" min="1" max="15" oninput="calcCCDepr('${o.id}')">
+                </div>
+                <div class="cc-grid2" style="margin-bottom:6px">
+                  <div class="cc-lbl">Cows per bull<small>How many cows each bull covers</small></div>
+                  <input class="cc-in" type="number" id="${o.id}-cc-depr-bull-cows" placeholder="e.g. 25" min="1" oninput="calcCCDepr('${o.id}')">
+                </div>
+                <div class="cc-depr-result">
+                  <div><div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mist)">Bull Cost / Cow / Year</div><div style="font-size:.62rem;color:var(--mist)">(Purchase ÷ Years) ÷ Cows/Bull</div></div>
+                  <div style="font-family:'Libre Baskerville',serif;font-size:1.1rem;font-weight:700;color:var(--gold-l)" id="${o.id}-cc-depr-bull-result">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEED & HAY -->
+        <div class="cc-section">
+          <div class="cc-section-hdr"><span class="cc-section-ico">🌾</span><span class="cc-section-title">Feed &amp; Hay (Winter Feeding)</span><span class="cc-section-result" id="${o.id}-cc-feed-result-sec">—</span></div>
+          <div class="cc-body">
+            <div style="margin-bottom:10px">
+              <div class="cc-grid5" style="margin-bottom:4px">
+                <div class="cc-hdr" style="text-align:left">Feed Ingredient</div>
+                <div class="cc-hdr">Lbs/Hd/Day</div><div class="cc-hdr">Days Fed/Yr</div><div class="cc-hdr">$/Ton</div><div class="cc-hdr">$/Cow/Yr</div>
+              </div>
+              ${[
+                {id:'hay',    lbl:'Hay',                  hint:'All types — grass, alfalfa, mixed', lbsph:'e.g. 30', dph:'e.g. 120', tph:'e.g. 180'},
+                {id:'silage', lbl:'Silage / Corn Stalks', hint:'Silage, baleage, crop residue',      lbsph:'e.g. 40', dph:'e.g. 60',  tph:'e.g. 55'},
+                {id:'cubes',  lbl:'Range Cubes / Supp.',  hint:'Protein cubes, range cake',          lbsph:'e.g. 2',  dph:'e.g. 90',  tph:'e.g. 420'},
+              ].map(f=>`
+              <div class="cc-grid5" style="margin-bottom:4px">
+                <div class="cc-lbl">${f.lbl}<small>${f.hint}</small></div>
+                <input class="cc-in" type="number" id="${o.id}-cc-${f.id}-lbs" placeholder="${f.lbsph}" min="0" step="0.5" oninput="calcCCFeed('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-${f.id}-days" placeholder="${f.dph}" min="0" step="1" oninput="calcCCFeed('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-${f.id}-ton" placeholder="${f.tph}" min="0" step="1" oninput="calcCCFeed('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-${f.id}-cow">—</div>
+              </div>`).join('')}
+              <div class="cc-grid5" style="margin-bottom:4px">
+                <div class="cc-lbl">Protein Tubs<small>Monthly herd spend on tubs</small></div>
+                <div style="grid-column:2/4">
+                  <div class="cc-hdr" style="margin-bottom:3px;text-align:right">$/Month (whole herd)</div>
+                  <input class="cc-in" type="number" id="${o.id}-cc-tubs-month" placeholder="e.g. 400" min="0" step="10" oninput="calcCCFeed('${o.id}')">
+                </div>
+                <div>
+                  <div class="cc-hdr" style="margin-bottom:3px">Months</div>
+                  <input class="cc-in" type="number" id="${o.id}-cc-tubs-months" placeholder="e.g. 4" min="0" max="12" oninput="calcCCFeed('${o.id}')">
+                </div>
+                <div class="cc-computed" id="${o.id}-cc-tubs-cow">—</div>
+              </div>
+              <div class="cc-grid5" style="margin-bottom:4px">
+                <div class="cc-lbl">Mineral / Salt<small>Bagged or loose mineral, blocks</small></div>
+                <div style="grid-column:2/4">
+                  <input class="cc-in" type="number" id="${o.id}-cc-mineral-month" placeholder="e.g. 150" min="0" step="10" oninput="calcCCFeed('${o.id}')">
+                </div>
+                <div>
+                  <input class="cc-in" type="number" id="${o.id}-cc-mineral-months" placeholder="e.g. 12" min="0" max="12" oninput="calcCCFeed('${o.id}')">
+                </div>
+                <div class="cc-computed" id="${o.id}-cc-mineral-cow">—</div>
+              </div>
+              ${[1,2,3].map(n=>`
+              <div class="cc-misc-row" style="margin-bottom:4px">
+                <input class="cc-misc-name" type="text" id="${o.id}-cc-feedmisc${n}-name" placeholder="Other feed item…">
+                <input class="cc-in" type="number" id="${o.id}-cc-feedmisc${n}-cost" placeholder="$/cow/yr" min="0" step="0.01" oninput="calcCCFeed('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-feedmisc${n}-tot" style="font-size:.8rem">—</div>
+              </div>`).join('')}
+            </div>
+            <div class="cc-formula">Formula: Lbs/Day × Days ÷ 2,000 × $/Ton = $/Cow/Year &nbsp;|&nbsp; Tubs &amp; Mineral: $/Month × Months ÷ Cows</div>
+          </div>
+          <div class="cc-total-bar">
+            <div><div class="cc-total-lbl">Total Feed &amp; Hay / Cow / Year</div></div>
+            <div style="text-align:right"><div class="cc-total-val" id="${o.id}-cc-feed-total">—</div></div>
+          </div>
+        </div>
+
+        <!-- PASTURE -->
+        <div class="cc-section">
+          <div class="cc-section-hdr"><span class="cc-section-ico">🏡</span><span class="cc-section-title">Pasture Cost</span><span class="cc-section-result" id="${o.id}-cc-past-result-sec">—</span></div>
+          <div class="cc-body">
+            <div class="cc-grid4" style="margin-bottom:4px">
+              <div class="cc-hdr" style="text-align:left"></div><div class="cc-hdr">Acres</div><div class="cc-hdr">$/Acre/Yr</div><div class="cc-hdr">$/Cow/Yr</div>
+            </div>
+            <div class="cc-grid4" style="margin-bottom:8px">
+              <div class="cc-lbl">Cash Rent Pasture<small>Flat rate lease per acre</small></div>
+              <input class="cc-in" type="number" id="${o.id}-cc-past-rent-acres" placeholder="e.g. 500" min="0" oninput="calcCCPasture('${o.id}')">
+              <input class="cc-in" type="number" id="${o.id}-cc-past-rent-rate" placeholder="e.g. 28" min="0" step="0.50" oninput="calcCCPasture('${o.id}')">
+              <div class="cc-computed" id="${o.id}-cc-past-rent-cow">—</div>
+            </div>
+            <div class="cc-grid3" style="margin-bottom:4px">
+              <div class="cc-hdr" style="text-align:left"></div><div class="cc-hdr">$/Pair/Month</div><div class="cc-hdr">$/Cow/Yr</div>
+            </div>
+            <div class="cc-grid3" style="margin-bottom:8px">
+              <div class="cc-lbl">Grazing Lease<small>Per pair monthly rate × months</small></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <input class="cc-in" type="number" id="${o.id}-cc-past-lease-rate" placeholder="$/pair/mo" min="0" step="0.50" oninput="calcCCPasture('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-past-lease-months" placeholder="months" min="0" max="12" oninput="calcCCPasture('${o.id}')">
+              </div>
+              <div class="cc-computed" id="${o.id}-cc-past-lease-cow">—</div>
+            </div>
+            <div class="cc-grid3" style="margin-bottom:8px">
+              <div class="cc-lbl">Land Debt Service<small>Annual loan payment on owned pasture</small></div>
+              <input class="cc-in" type="number" id="${o.id}-cc-past-debt-payment" placeholder="e.g. 18500" min="0" step="100" oninput="calcCCPasture('${o.id}')">
+              <div class="cc-computed" id="${o.id}-cc-past-debt-cow">—</div>
+            </div>
+            <div class="cc-grid3" style="margin-bottom:8px">
+              <div class="cc-lbl">Fertilizer &amp; Chemical<small>Annual pasture fertilizer, herbicide</small></div>
+              <input class="cc-in" type="number" id="${o.id}-cc-past-fert-total" placeholder="e.g. 4200" min="0" step="50" oninput="calcCCPasture('${o.id}')">
+              <div class="cc-computed" id="${o.id}-cc-past-fert-cow">—</div>
+            </div>
+            <div class="cc-grid3" style="margin-bottom:8px">
+              <div class="cc-lbl">Property Taxes<small>Annual taxes on owned pasture</small></div>
+              <input class="cc-in" type="number" id="${o.id}-cc-past-tax-total" placeholder="e.g. 1800" min="0" step="50" oninput="calcCCPasture('${o.id}')">
+              <div class="cc-computed" id="${o.id}-cc-past-tax-cow">—</div>
+            </div>
+            <div class="cc-grid3">
+              <div class="cc-lbl">Other Pasture Maintenance<small>Fencing, water, seeding, brush control</small></div>
+              <input class="cc-in" type="number" id="${o.id}-cc-past-maint-total" placeholder="e.g. 800" min="0" step="50" oninput="calcCCPasture('${o.id}')">
+              <div class="cc-computed" id="${o.id}-cc-past-maint-cow">—</div>
+            </div>
+            <div class="cc-formula" style="margin-top:6px">All sections: Annual Total ÷ Number of Cows = $/Cow/Year</div>
+          </div>
+          <div class="cc-total-bar">
+            <div><div class="cc-total-lbl">Total Pasture Cost / Cow / Year</div></div>
+            <div style="text-align:right"><div class="cc-total-val" id="${o.id}-cc-past-total">—</div></div>
+          </div>
+        </div>
+
+        <!-- VETERINARY -->
+        <div class="cc-section">
+          <div class="cc-section-hdr"><span class="cc-section-ico">💉</span><span class="cc-section-title">Veterinary &amp; Medicine</span><span class="cc-section-result" id="${o.id}-cc-vet-result-sec">—</span></div>
+          <div class="cc-body">
+            <div class="cc-path">
+              <div class="cc-path-lbl" style="color:var(--grass)">Vaccines / Preventatives — Self-Purchased ($/head)</div>
+              <div class="cc-grid3" style="margin-bottom:4px"><div class="cc-hdr" style="text-align:left"></div><div class="cc-hdr">$/Head</div><div class="cc-hdr">$/Cow/Yr</div></div>
+              <div class="cc-grid3">
+                <div class="cc-lbl">Vaccine &amp; supply cost per animal</div>
+                <input class="cc-in" type="number" id="${o.id}-cc-vet-vacc-perhead" placeholder="e.g. 18" min="0" step="0.50" oninput="calcCCVet('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-vet-vacc-a-cow">—</div>
+              </div>
+            </div>
+            <div class="cc-path-b" style="margin-bottom:8px">
+              <div class="cc-path-lbl cc-sky">Vaccines — Vet-Administered (Annual Bill)</div>
+              <div class="cc-grid3">
+                <div class="cc-lbl">Total annual vet vaccination bill</div>
+                <input class="cc-in" type="number" id="${o.id}-cc-vet-vacc-bill" placeholder="e.g. 1200" min="0" step="50" oninput="calcCCVet('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-vet-vacc-b-cow">—</div>
+              </div>
+              <div class="cc-formula">Annual Bill ÷ Number of Cows</div>
+            </div>
+            <div class="cc-path">
+              <div class="cc-path-lbl" style="color:var(--grass)">Fly Control / Dewormers — Self-Purchased ($/head)</div>
+              <div class="cc-grid3">
+                <div class="cc-lbl">Pour-on / dewormer cost per head</div>
+                <input class="cc-in" type="number" id="${o.id}-cc-vet-fly-perhead" placeholder="e.g. 12" min="0" step="0.50" oninput="calcCCVet('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-vet-fly-a-cow">—</div>
+              </div>
+            </div>
+            <div class="cc-path-b" style="margin-bottom:8px">
+              <div class="cc-path-lbl cc-sky">Fly Control / Dewormers — Vet-Administered</div>
+              <div class="cc-grid3">
+                <div class="cc-lbl">Total annual parasite control bill</div>
+                <input class="cc-in" type="number" id="${o.id}-cc-vet-fly-bill" placeholder="e.g. 600" min="0" step="50" oninput="calcCCVet('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-vet-fly-b-cow">—</div>
+              </div>
+            </div>
+            <div class="cc-grid4" style="margin-bottom:4px"><div class="cc-hdr" style="text-align:left"></div><div class="cc-hdr">$/Head to Test</div><div class="cc-hdr">Head Tested</div><div class="cc-hdr">$/Cow/Yr</div></div>
+            <div class="cc-grid4" style="margin-bottom:8px">
+              <div class="cc-lbl">Pregnancy Testing<small>Vet fee per head or flat call ÷ head tested</small></div>
+              <input class="cc-in" type="number" id="${o.id}-cc-vet-preg-perhead" placeholder="e.g. 4.50" min="0" step="0.25" oninput="calcCCVet('${o.id}')">
+              <input class="cc-in" type="number" id="${o.id}-cc-vet-preg-head" placeholder="e.g. 150" min="0" oninput="calcCCVet('${o.id}')">
+              <div class="cc-computed" id="${o.id}-cc-vet-preg-cow">—</div>
+            </div>
+            <div class="cc-path">
+              <div class="cc-path-lbl" style="color:var(--grass)">Sick / Unexpected — Annual Average</div>
+              <div class="cc-grid3">
+                <div class="cc-lbl">Average annual sick/emergency spend</div>
+                <input class="cc-in" type="number" id="${o.id}-cc-vet-sick-annual" placeholder="e.g. 1800" min="0" step="50" oninput="calcCCVet('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-vet-sick-a-cow">—</div>
+              </div>
+            </div>
+            <div class="cc-path-b">
+              <div class="cc-path-lbl cc-sky">Sick / Unexpected — Estimate by Incident Rate</div>
+              <div class="cc-grid4" style="margin-bottom:4px"><div></div><div class="cc-hdr">% Herd Treated</div><div class="cc-hdr">Avg Cost/Incident</div><div class="cc-hdr">$/Cow/Yr</div></div>
+              <div class="cc-grid4">
+                <div class="cc-lbl">Estimate by incident rate</div>
+                <input class="cc-in" type="number" id="${o.id}-cc-vet-sick-pct" placeholder="e.g. 8" min="0" max="100" oninput="calcCCVet('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-vet-sick-cost" placeholder="e.g. 120" min="0" step="5" oninput="calcCCVet('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-vet-sick-b-cow">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="cc-total-bar">
+            <div><div class="cc-total-lbl">Total Vet &amp; Medicine / Cow / Year</div></div>
+            <div style="text-align:right"><div class="cc-total-val" id="${o.id}-cc-vet-total">—</div></div>
+          </div>
+        </div>
+
+        <!-- INTEREST -->
+        <div class="cc-section">
+          <div class="cc-section-hdr"><span class="cc-section-ico">💰</span><span class="cc-section-title">Interest / Cost of Capital</span><span class="cc-section-result" id="${o.id}-cc-int-result-sec">—</span></div>
+          <div class="cc-body">
+            <div class="cc-path">
+              <div class="cc-path-lbl" style="color:var(--grass)">Cattle Note — Financed Herd</div>
+              <div class="cc-grid4" style="margin-bottom:4px"><div></div><div class="cc-hdr">Loan Balance ($)</div><div class="cc-hdr">Interest Rate %</div><div class="cc-hdr">$/Cow/Yr</div></div>
+              <div class="cc-grid4">
+                <div class="cc-lbl">Cattle note balance &amp; rate<small>Outstanding balance on cattle purchase loan</small></div>
+                <input class="cc-in" type="number" id="${o.id}-cc-int-note-bal" placeholder="e.g. 240000" min="0" step="1000" oninput="calcCCInterest('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-int-note-rate" placeholder="e.g. 8.5" min="0" step="0.25" oninput="calcCCInterest('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-int-note-cow">—</div>
+              </div>
+            </div>
+            <div class="cc-path-b">
+              <div class="cc-path-lbl cc-sky">Operating Line of Credit</div>
+              <div class="cc-grid4" style="margin-bottom:4px"><div></div><div class="cc-hdr">Annual Draw ($)</div><div class="cc-hdr">Interest Rate %</div><div class="cc-hdr">$/Cow/Yr</div></div>
+              <div class="cc-grid4" style="margin-bottom:6px">
+                <div class="cc-lbl">Operating line — annual interest cost<small>Total interest paid on operating line for the year</small></div>
+                <input class="cc-in" type="number" id="${o.id}-cc-int-op-annual" placeholder="e.g. 18000" min="0" step="500" oninput="calcCCInterest('${o.id}')">
+                <div></div>
+                <div class="cc-computed" id="${o.id}-cc-int-op-a-cow">—</div>
+              </div>
+              <div class="cc-grid4">
+                <div class="cc-lbl">— OR — avg balance &amp; rate<small>If you carry a revolving balance</small></div>
+                <input class="cc-in" type="number" id="${o.id}-cc-int-op-bal" placeholder="e.g. 80000" min="0" step="1000" oninput="calcCCInterest('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-int-op-rate" placeholder="e.g. 8.5" min="0" step="0.25" oninput="calcCCInterest('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-int-op-b-cow">—</div>
+              </div>
+            </div>
+            <div class="cc-formula" style="margin-top:6px">Cattle note: Balance × Rate ÷ Cows &nbsp;|&nbsp; Op line: Annual Interest ÷ Cows</div>
+          </div>
+          <div class="cc-total-bar">
+            <div><div class="cc-total-lbl">Total Interest / Cost of Capital / Cow / Year</div></div>
+            <div style="text-align:right"><div class="cc-total-val" id="${o.id}-cc-int-total">—</div></div>
+          </div>
+        </div>
+
+        <!-- EQUIPMENT -->
+        <div class="cc-section">
+          <div class="cc-section-hdr"><span class="cc-section-ico">🚜</span><span class="cc-section-title">Equipment Cost</span><span class="cc-section-result" id="${o.id}-cc-eq-result-sec">—</span></div>
+          <div class="cc-body">
+            <div class="cc-path" style="margin-bottom:8px">
+              <div class="cc-path-lbl" style="color:var(--grass)">Paid-For Equipment — Depreciation</div>
+              <div style="display:grid;grid-template-columns:1fr 150px 130px 110px;gap:8px;align-items:center;margin-bottom:4px">
+                <div></div><div class="cc-hdr">Equipment Value ($)</div><div class="cc-hdr">Years to Trade</div><div class="cc-hdr">$/Cow/Yr</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 150px 130px 110px;gap:8px;align-items:center">
+                <div class="cc-lbl">All debt-free equipment<small>Current value of paid-for tractors, hay equipment, feeders, etc.</small></div>
+                <input class="cc-in" type="number" id="${o.id}-cc-eq-owned-val" placeholder="e.g. 120000" min="0" step="1000" oninput="calcCCEquipment('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-eq-owned-years" placeholder="e.g. 8" min="1" max="20" oninput="calcCCEquipment('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-eq-owned-cow">—</div>
+              </div>
+            </div>
+            <div class="cc-path-b" style="margin-bottom:8px">
+              <div class="cc-path-lbl cc-sky">Financed Equipment — Annual Payments</div>
+              <div class="cc-grid3">
+                <div class="cc-lbl">Total annual equipment loan payments<small>All equipment notes combined</small></div>
+                <input class="cc-in" type="number" id="${o.id}-cc-eq-fin-payments" placeholder="e.g. 22000" min="0" step="500" oninput="calcCCEquipment('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-eq-fin-cow">—</div>
+              </div>
+            </div>
+            <div style="background:#fefaf0;border:1px solid var(--gold);padding:10px 12px">
+              <div class="cc-path-lbl" style="color:var(--hide)">Cattle Operation Share (%)</div>
+              <div class="cc-grid3">
+                <div class="cc-lbl">% of equipment use attributable to cattle<small>If all cattle, enter 100. If shared with crops, enter cattle %</small></div>
+                <input class="cc-in" type="number" id="${o.id}-cc-eq-pct" placeholder="e.g. 60" min="1" max="100" oninput="calcCCEquipment('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-eq-final-cow">—</div>
+              </div>
+            </div>
+            <div class="cc-formula" style="margin-top:6px">Paid-for: Value ÷ Trade Years ÷ Cows &nbsp;|&nbsp; Financed: Payments ÷ Cows &nbsp;|&nbsp; × Cattle %</div>
+          </div>
+          <div class="cc-total-bar">
+            <div><div class="cc-total-lbl">Total Equipment Cost / Cow / Year</div></div>
+            <div style="text-align:right"><div class="cc-total-val" id="${o.id}-cc-eq-total">—</div></div>
+          </div>
+        </div>
+
+        <!-- LABOR -->
+        <div class="cc-section">
+          <div class="cc-section-hdr"><span class="cc-section-ico">👤</span><span class="cc-section-title">Labor</span><span class="cc-section-result" id="${o.id}-cc-lab-result-sec">—</span></div>
+          <div class="cc-body">
+            <div class="cc-path-b" style="margin-bottom:8px">
+              <div class="cc-path-lbl cc-sky">Owner / Family Labor (unpaid)</div>
+              <div style="display:grid;grid-template-columns:1fr 110px 100px 100px 100px;gap:8px;align-items:center;margin-bottom:4px">
+                <div></div><div class="cc-hdr">Hrs/Week</div><div class="cc-hdr">Wage $/hr</div><div class="cc-hdr">% Cattle</div><div class="cc-hdr">$/Cow/Yr</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 110px 100px 100px 100px;gap:8px;align-items:center;margin-bottom:8px">
+                <div class="cc-lbl">Owner / family unpaid time<small>Hrs/week × 52 × wage × cattle %</small></div>
+                <input class="cc-in" type="number" id="${o.id}-cc-lab-owner-hrs" placeholder="e.g. 20" min="0" oninput="calcCCLabor('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-lab-owner-wage" placeholder="e.g. 18" min="0" step="0.50" oninput="calcCCLabor('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-lab-owner-pct" placeholder="e.g. 70" min="0" max="100" oninput="calcCCLabor('${o.id}')">
+                <div class="cc-computed cc-sky" id="${o.id}-cc-lab-owner-cow">—</div>
+              </div>
+              <div style="padding:8px 10px;background:white;border:1px solid #b8d0e8;display:flex;align-items:center;gap:10px">
+                <input type="checkbox" id="${o.id}-cc-lab-owner-include" onchange="calcCCLabor('${o.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--sky)">
+                <label for="${o.id}-cc-lab-owner-include" style="font-size:.74rem;color:#1a3a4a;cursor:pointer;line-height:1.4"><strong>Include unpaid owner labor in cost of production</strong><span style="display:block;font-size:.65rem;color:var(--stone);margin-top:1px">Leave unchecked to use as a conversation tool only</span></label>
+              </div>
+            </div>
+            <div class="cc-path" style="margin-bottom:8px">
+              <div class="cc-path-lbl" style="color:var(--grass)">Hired Labor — Hourly</div>
+              <div style="display:grid;grid-template-columns:1fr 110px 100px 100px 100px;gap:8px;align-items:center">
+                <div class="cc-lbl">Hourly hired help<small>Hrs/week × 52 × wage × cattle %</small></div>
+                <input class="cc-in" type="number" id="${o.id}-cc-lab-hired-hrs" placeholder="e.g. 40" min="0" oninput="calcCCLabor('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-lab-hired-wage" placeholder="e.g. 20" min="0" step="0.50" oninput="calcCCLabor('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-lab-hired-pct" placeholder="e.g. 60" min="0" max="100" oninput="calcCCLabor('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-lab-hired-a-cow">—</div>
+              </div>
+            </div>
+            <div class="cc-path-b">
+              <div class="cc-path-lbl cc-sky">Hired Labor — Salary</div>
+              <div style="display:grid;grid-template-columns:1fr 160px 100px 100px;gap:8px;align-items:center">
+                <div class="cc-lbl">Salaried employee<small>Annual salary × cattle %</small></div>
+                <input class="cc-in" type="number" id="${o.id}-cc-lab-sal-amount" placeholder="e.g. 45000" min="0" step="500" oninput="calcCCLabor('${o.id}')">
+                <input class="cc-in" type="number" id="${o.id}-cc-lab-sal-pct" placeholder="e.g. 50" min="0" max="100" oninput="calcCCLabor('${o.id}')">
+                <div class="cc-computed" id="${o.id}-cc-lab-hired-b-cow">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="cc-total-bar">
+            <div><div class="cc-total-lbl">Total Labor / Cow / Year</div></div>
+            <div style="text-align:right"><div class="cc-total-val" id="${o.id}-cc-lab-total">—</div></div>
+          </div>
+        </div>
+
+        <!-- MISC -->
+        <div class="cc-section">
+          <div class="cc-section-hdr"><span class="cc-section-ico">📦</span><span class="cc-section-title">Miscellaneous / Other</span><span class="cc-section-result" id="${o.id}-cc-misc-result-sec">—</span></div>
+          <div class="cc-body">
+            ${[1,2,3].map(n=>`
+            <div class="cc-misc-row">
+              <input class="cc-misc-name" type="text" id="${o.id}-cc-misc${n}-name" placeholder="e.g. Utilities, fencing, ear tags…">
+              <input class="cc-in" type="number" id="${o.id}-cc-misc${n}-cost" placeholder="$/cow/yr" min="0" step="0.01" oninput="recalcCC('${o.id}')">
+              <div class="cc-computed" id="${o.id}-cc-misc${n}-tot" style="font-size:.8rem">—</div>
+            </div>`).join('')}
+          </div>
+          <div class="cc-total-bar">
+            <div><div class="cc-total-lbl">Total Misc / Cow / Year</div></div>
+            <div style="text-align:right"><div class="cc-total-val" id="${o.id}-cc-misc-total">—</div></div>
+          </div>
+        </div>
+
+        <!-- RESULT SUMMARY -->
+        <div class="cc-summary-strip">
+          <div class="cc-sum-blk">
+            <div class="cc-sum-lbl">Total Cost / Cow / Year</div>
+            <div class="cc-sum-val" id="${o.id}-cc-costpercow">—</div>
+          </div>
+          <div class="cc-sum-blk">
+            <div class="cc-sum-lbl">True Cost / Calf Sold</div>
+            <div class="cc-sum-val" id="${o.id}-cc-costpercalf">—</div>
+          </div>
+          <div class="cc-sum-blk">
+            <div class="cc-sum-lbl">Head Count (calves to sell)</div>
+            <div class="cc-sum-val" id="${o.id}-cc-headcount">—</div>
+          </div>
+        </div>
+        <div class="cc-result-bar">
+          <div>
+            <div class="cc-result-lbl">Cost of Calf at Birth → Auto-fills Purchase Price row</div>
+            <div class="cc-result-sub" id="${o.id}-cc-autofill-note">Complete the wizard above to calculate</div>
+          </div>
+          <div style="text-align:right">
+            <div class="cc-result-val" id="${o.id}-cc-costpercalf-big">—</div>
+            <div class="cc-result-sub">per calf / head</div>
+          </div>
+        </div>
+
+      </div><!-- /cc-wzbody -->
+    </div><!-- /cc-wizard -->
+    ` : `
+    <div class="meta">
+      <div class="mf"><label>Head Count</label>
+        <input type="number" id="${o.id}-head"     placeholder="0"    min="0" oninput="recalc('${o.id}')"></div>
+      <div class="mf"><label>Buy Weight (lbs)</label>
+        <input type="number" id="${o.id}-buywt"    placeholder="0"    min="0" oninput="recalc('${o.id}')"></div>
+      <div class="mf"><label>Buy Price ($/cwt)</label>
+        <input type="number" id="${o.id}-buyprice" placeholder="0.00" min="0" step="0.01" oninput="recalc('${o.id}')"></div>
+      <div class="mf"><label>Sell Weight (lbs)</label>
+        <input type="number" id="${o.id}-sellwt"   placeholder="0"    min="0" oninput="recalc('${o.id}')"></div>
+      <div class="mf"><label>${o.daysLabel}</label>
+        <input type="number" id="${o.id}-days"     placeholder="0"    min="0" oninput="recalc('${o.id}')"></div>
+    </div>
+    `}
+
+    <!-- ── COST BUILDER WIZARD ── -->
+    <div class="wizard" id="${o.id}-wizard">
+      <div class="wizard-hdr" onclick="toggleWizard('${o.id}')">
+        <div class="wizard-title">🧮 Cost Builder <span>Recommended</span></div>
+        <div class="wizard-toggle">Click to expand and build your costs <span class="wizard-arrow" id="${o.id}-wzarrow">▼</span></div>
+      </div>
+      <div class="wizard-body" id="${o.id}-wzbody">
+
+        <!-- FEED -->
+        <div class="wiz-section">
+          <div class="wiz-sec-title">🌾 Feed Costs — Enter each feed ingredient</div>
+          <div class="feed-grid">
+            <div class="feed-grid-hdr">Feed Ingredient</div>
+            <div class="feed-grid-hdr" style="text-align:right">Lbs/Hd/Day</div>
+            <div class="feed-grid-hdr" style="text-align:right">$/Ton</div>
+            <div class="feed-grid-hdr" style="text-align:right">Cost/Hd/Day</div>
+            <!-- Hay -->
+            <div class="feed-row">
+              <div><span class="feed-cell-lbl">Hay</span></div>
+              <div><input class="feed-in" type="number" id="${o.id}-fi-hay-lbs" placeholder="0" step="0.1" min="0" oninput="calcFeed('${o.id}')"></div>
+              <div><input class="feed-in" type="number" id="${o.id}-fi-hay-ton" placeholder="0" step="0.01" min="0" oninput="calcFeed('${o.id}')"></div>
+              <div style="justify-content:flex-end;font-size:.76rem;font-weight:600" id="${o.id}-fi-hay-cpd">—</div>
+            </div>
+            <!-- Silage -->
+            <div class="feed-row">
+              <div><span class="feed-cell-lbl">Silage / Haylage</span></div>
+              <div><input class="feed-in" type="number" id="${o.id}-fi-sil-lbs" placeholder="0" step="0.1" min="0" oninput="calcFeed('${o.id}')"></div>
+              <div><input class="feed-in" type="number" id="${o.id}-fi-sil-ton" placeholder="0" step="0.01" min="0" oninput="calcFeed('${o.id}')"></div>
+              <div style="justify-content:flex-end;font-size:.76rem;font-weight:600" id="${o.id}-fi-sil-cpd">—</div>
+            </div>
+            <!-- Grain -->
+            <div class="feed-row">
+              <div><span class="feed-cell-lbl">Grain / Corn</span></div>
+              <div><input class="feed-in" type="number" id="${o.id}-fi-grn-lbs" placeholder="0" step="0.1" min="0" oninput="calcFeed('${o.id}')"></div>
+              <div><input class="feed-in" type="number" id="${o.id}-fi-grn-ton" placeholder="0" step="0.01" min="0" oninput="calcFeed('${o.id}')"></div>
+              <div style="justify-content:flex-end;font-size:.76rem;font-weight:600" id="${o.id}-fi-grn-cpd">—</div>
+            </div>
+            <!-- Supplement -->
+            <div class="feed-row">
+              <div><span class="feed-cell-lbl">Supplement / Mineral</span></div>
+              <div><input class="feed-in" type="number" id="${o.id}-fi-sup-lbs" placeholder="0" step="0.1" min="0" oninput="calcFeed('${o.id}')"></div>
+              <div><input class="feed-in" type="number" id="${o.id}-fi-sup-ton" placeholder="0" step="0.01" min="0" oninput="calcFeed('${o.id}')"></div>
+              <div style="justify-content:flex-end;font-size:.76rem;font-weight:600" id="${o.id}-fi-sup-cpd">—</div>
+            </div>
+            <!-- Custom 1 -->
+            <div class="feed-row">
+              <div><input class="feed-in" type="text" id="${o.id}-fi-c1-name" placeholder="Other ingredient…" style="text-align:left;font-size:.74rem"></div>
+              <div><input class="feed-in" type="number" id="${o.id}-fi-c1-lbs" placeholder="0" step="0.1" min="0" oninput="calcFeed('${o.id}')"></div>
+              <div><input class="feed-in" type="number" id="${o.id}-fi-c1-ton" placeholder="0" step="0.01" min="0" oninput="calcFeed('${o.id}')"></div>
+              <div style="justify-content:flex-end;font-size:.76rem;font-weight:600" id="${o.id}-fi-c1-cpd">—</div>
+            </div>
+          </div>
+          <div class="feed-total-row">
+            <div class="feed-total-lbl">Total feed cost/hd/day → × days on feed</div>
+            <div class="feed-total-val" id="${o.id}-feed-cpd-tot">—</div>
+            <div></div>
+            <div class="feed-total-val" id="${o.id}-feed-total-hd">—</div>
+          </div>
+        </div>
+
+        <!-- PASTURE / GRAZING -->
+        <div class="wiz-section">
+          <div class="wiz-sec-title">🏡 Pasture / Grazing Lease</div>
+          <div class="past-grid">
+            <div>
+              <div class="int-lbl">Total Pasture Lease Cost ($)</div>
+              <div class="int-sub">Total dollars for the pasture or lease tract</div>
+            </div>
+            <input class="int-in" type="number" id="${o.id}-past-total" placeholder="0" step="0.01" min="0" oninput="calcPasture('${o.id}')">
+            <div>
+              <div class="int-lbl">Head Using Pasture</div>
+              <div class="int-sub">Number of head on this lease (can differ from operation head count)</div>
+            </div>
+            <input class="int-in" type="number" id="${o.id}-past-head" placeholder="0" min="0" oninput="calcPasture('${o.id}')">
+            <div>
+              <div class="int-lbl">— OR — enter directly as $/head</div>
+              <div class="int-sub">If you already know the per-head cost, enter here</div>
+            </div>
+            <input class="int-in" type="number" id="${o.id}-past-perhd" placeholder="0.00" step="0.01" min="0" oninput="calcPasture('${o.id}')">
+          </div>
+          <div class="past-result">
+            <span class="past-result-lbl">Pasture cost / head → applied to cost table</span>
+            <span class="past-result-val" id="${o.id}-past-result">—</span>
+          </div>
+        </div>
+
+        <!-- INTEREST -->
+        <div class="wiz-section">
+          <div class="wiz-sec-title">💰 Interest / Cost of Capital</div>
+          <div class="int-grid">
+            <div>
+              <div class="int-lbl">Purchase Price / Head</div>
+              <div class="int-sub">Auto-filled from buy weight × buy price above</div>
+            </div>
+            <input class="int-in" type="number" id="${o.id}-int-purchase" placeholder="auto" readonly>
+            <div>
+              <div class="int-lbl">Operating Costs to Finance ($/head)</div>
+              <div class="int-sub">Auto-filled from all cost table rows (excluding purchase &amp; interest)</div>
+            </div>
+            <input class="int-in" type="number" id="${o.id}-int-opcost" placeholder="auto" readonly>
+            <div>
+              <div class="int-lbl">Annual Interest Rate (%)</div>
+              <div class="int-sub">Your operating line or floor-plan rate</div>
+            </div>
+            <input class="int-in" type="number" id="${o.id}-int-rate" placeholder="e.g. 8.5" step="0.01" min="0" oninput="calcInterest('${o.id}')">
+            <div>
+              <div class="int-lbl">Days Financed</div>
+              <div class="int-sub">Auto-filled from Days on Feed/Grass above</div>
+            </div>
+            <input class="int-in" type="number" id="${o.id}-int-days" placeholder="auto" readonly>
+          </div>
+          <div class="int-result">
+            <span class="int-result-lbl">Calculated interest / head → applied to cost table</span>
+            <span class="int-result-val" id="${o.id}-int-result">—</span>
+          </div>
+        </div>
+
+        <!-- DEATH LOSS -->
+        <div class="wiz-section">
+          <div class="wiz-sec-title">📉 Death Loss Allowance</div>
+          <div class="death-grid">
+            <div>
+              <div class="int-lbl">Purchase Price / Head</div>
+              <div class="int-sub">Auto-filled from buy weight × buy price above</div>
+            </div>
+            <input class="int-in" type="number" id="${o.id}-dl-purchase" placeholder="auto" readonly>
+            <div>
+              <div class="int-lbl">Expected Death Loss Rate (%)</div>
+              <div class="int-sub">Typically 1–2% for healthy purchased cattle</div>
+            </div>
+            <input class="int-in" type="number" id="${o.id}-dl-rate" placeholder="e.g. 1.5" step="0.1" min="0" max="20" oninput="calcDeathLoss('${o.id}')">
+          </div>
+          <div class="death-result">
+            <span class="past-result-lbl">Death loss allowance / head → applied to cost table</span>
+            <span class="past-result-val" id="${o.id}-dl-result">—</span>
+          </div>
+        </div>
+
+        <!-- APPLY BUTTON -->
+        <div class="wiz-apply">
+          <button class="btn-apply" onclick="applyWizard('${o.id}')">✔ Apply All to Cost Table</button>
+          <span class="wiz-apply-note">Updates Feed, Pasture, Interest, and Death Loss rows automatically</span>
+          <span class="wiz-applied" id="${o.id}-wiz-applied">✓ Applied!</span>
+        </div>
+
+      </div><!-- /wizard-body -->
+    </div><!-- /wizard -->
+
+    <table class="ctbl">
+      <thead><tr>
+        <th style="width:220px">Cost Category</th>
+        <th>Cost / Head ($)</th>
+        <th>Total Herd ($)</th>
+        <th>% of Total</th>
+      </tr></thead>
+      <tbody id="${o.id}-tbody"></tbody>
+      <tfoot><tr>
+        <td class="ft-l">Total All-In Cost</td>
+        <td class="ft-v" id="${o.id}-tot-hd">—</td>
+        <td class="ft-v" id="${o.id}-tot-herd">—</td>
+        <td class="ft-v">100%</td>
+      </tr></tfoot>
+    </table>
+
+    <div class="be-strip">
+      <div class="be-blk">
+        <div class="be-lbl">Total Cost / Head</div>
+        <div class="be-val" id="${o.id}-be-hd">—</div>
+        <div class="be-u">all-in cost per head</div>
+      </div>
+      <div class="be-blk">
+        <div class="be-lbl">Breakeven Sell Price</div>
+        <div class="be-val" id="${o.id}-be-cwt">—</div>
+        <div class="be-u">$/cwt at sell weight</div>
+      </div>
+      <div class="be-blk">
+        <div class="be-lbl">Expected Revenue / Head</div>
+        <div class="be-val" id="${o.id}-rev">—</div>
+        <div class="be-u">at target sell price</div>
+        <div class="be-tgt">
+          <label>Target&nbsp;$/cwt:</label>
+          <input type="number" id="${o.id}-sellprice" placeholder="0.00" step="0.01" oninput="recalc('${o.id}')">
+        </div>
+        <div class="be-net">Net / head: <span id="${o.id}-net">—</span></div>
+      </div>
+    </div>
+
+    <div class="risk">
+      <div class="risk-lbl">Risk Exposure Indicator</div>
+      <div class="risk-track"><div class="risk-pin" id="${o.id}-pin" style="left:50%"></div></div>
+      <div class="risk-ends"><span>Low Risk</span><span>Moderate</span><span>High Risk</span></div>
+      <div class="risk-msg" id="${o.id}-rmsg"></div>
+    </div>
+
+    <div class="notes">
+      <label>Agent Notes — ${o.name}</label>
+      <textarea id="${o.id}-notes" placeholder="Record producer concerns, market outlook, LRP interest, follow-up items..."></textarea>
+    </div>
+  </div>
+
+  <!-- ── LRP ── -->
+  <div class="sec" id="${o.id}-lrp">
+
+    <!-- LIVE QUOTE FETCHER -->
+    <div class="lrp-fetch-panel" id="${o.id}-fetch-panel">
+      <div class="lrp-fetch-hdr">
+        <div class="lrp-fetch-title">
+          📡 Live LRP Quotes
+          <span class="lrp-fetch-badge">USDA RMA · Updated Daily</span>
+        </div>
+        <div class="lrp-fetch-status">
+          <div class="lrp-status-dot" id="${o.id}-sdot"></div>
+          <span id="${o.id}-stext">Select options and click Get Quotes</span>
+        </div>
+      </div>
+      <div class="lrp-fetch-body">
+        <div class="lrp-fetch-selectors">
+          <div class="lrp-sel-group">
+            <div class="lrp-sel-lbl">Commodity</div>
+            <select class="lrp-sel" id="${o.id}-fc-commodity">
+              <option value="FC">Feeder Cattle</option>
+              <option value="FD">Fed Cattle</option>
+            </select>
+          </div>
+          <div class="lrp-sel-group">
+            <div class="lrp-sel-lbl">Weight Class</div>
+            <select class="lrp-sel" id="${o.id}-fc-wt">
+              <option value="1">Steers &lt;6 cwt</option>
+              <option value="2" selected>Steers 6–9 cwt</option>
+              <option value="3">Steers &gt;9 cwt</option>
+              <option value="4">Heifers &lt;6 cwt</option>
+              <option value="5">Heifers 6–9 cwt</option>
+              <option value="6">Heifers &gt;9 cwt</option>
+            </select>
+          </div>
+          <div class="lrp-sel-group">
+            <div class="lrp-sel-lbl">State</div>
+            <select class="lrp-sel" id="${o.id}-fc-state">
+              <option value="KS" selected>Kansas</option>
+              <option value="NE">Nebraska</option>
+              <option value="TX">Texas</option>
+              <option value="OK">Oklahoma</option>
+              <option value="CO">Colorado</option>
+              <option value="SD">South Dakota</option>
+              <option value="ND">North Dakota</option>
+              <option value="MO">Missouri</option>
+              <option value="IA">Iowa</option>
+              <option value="MT">Montana</option>
+              <option value="WY">Wyoming</option>
+              <option value="ID">Idaho</option>
+              <option value="CA">California</option>
+              <option value="FL">Florida</option>
+            </select>
+          </div>
+          <div class="lrp-sel-group">
+            <div class="lrp-sel-lbl">Expected Marketing Date</div>
+            <input type="date" class="lrp-sel" id="${o.id}-fc-enddate"
+              oninput="onEndDateChange('${o.id}')"
+              style="padding:6px 8px;font-size:.78rem">
+            <div class="lrp-date-hint" id="${o.id}-fc-weeksHint"></div>
+          </div>
+          <button class="btn-fetch" id="${o.id}-fetch-btn" onclick="fetchLRP('${o.id}')">Get Quotes</button>
+        </div>
+        <div id="${o.id}-fetch-results">
+          <div class="lrp-fetch-msg">Enter your producer's expected marketing date, select commodity and weight class — then click <strong>Get Quotes</strong>.</div>
+        </div>
+        <div class="lrp-select-hint" id="${o.id}-fetch-hint"></div>
+      </div>
+      <div class="lrp-applied-bar" id="${o.id}-applied-bar">
+        <div class="lrp-applied-lbl">✅ Coverage cards updated from live RMA data</div>
+        <div class="lrp-applied-vals" id="${o.id}-applied-vals"></div>
+      </div>
+    </div>
+
+    <div class="lrp-hero">
+      <h3>🛡️ Livestock Risk Protection (LRP) — Coverage Analysis</h3>
+      <p>LRP is a federally subsidized price insurance program for feeder cattle. It protects against a decline in the CME Feeder Cattle Index below your chosen coverage floor. Enter your input costs first, then configure LRP below to see the full insured vs. uninsured comparison.</p>
+    </div>
+
+    <div class="lrp-3col">
+      <div class="l3"><div class="l3-ico">📅</div><div class="l3-title">How LRP Works</div><div class="l3-desc">Choose an endorsement length (13–52 weeks) and a coverage level (70–100% of the expected ending value). If the CME Feeder Cattle Index falls below your floor at the end of the endorsement, you receive an indemnity for the difference.</div></div>
+      <div class="l3"><div class="l3-ico">💵</div><div class="l3-title">Federal Subsidy</div><div class="l3-desc">LRP premiums are subsidized by USDA — producers pay approximately 35% of the actuarial cost. Coverage levels at 95%+ receive an even higher subsidy rate, making high-coverage LRP exceptionally cost-effective relative to the protection provided.</div></div>
+      <div class="l3"><div class="l3-ico">🐄</div><div class="l3-title">Eligible Cattle</div><div class="l3-desc">Feeder cattle typically weighing 600–1,000 lbs qualify. Coverage must be purchased through an approved reinsurance agent before the sales closing date. Agrowise can place LRP coverage the same day you decide.</div></div>
+    </div>
+
+    <div class="lrp-inputs">
+      <div class="li">
+        <div class="li-lbl">Head to Insure</div>
+        <input type="number" id="${o.id}-lrp-head" placeholder="0" min="0" oninput="calcLRP('${o.id}')">
+        <div class="li-hint">Max 6,000 head per endorsement</div>
+      </div>
+      <div class="li">
+        <div class="li-lbl">Insured Weight (cwt)</div>
+        <input type="number" id="${o.id}-lrp-wt" placeholder="e.g. 7.5" step="0.1" min="0" oninput="calcLRP('${o.id}')">
+        <div class="li-hint">Expected ending weight in cwt (750 lbs = 7.5 cwt)</div>
+      </div>
+      <div class="li">
+        <div class="li-lbl">Expected Ending Value ($/cwt)</div>
+        <input type="number" id="${o.id}-lrp-eev" placeholder="← From Live Quotes" step="0.01" min="0" oninput="calcLRP('${o.id}')">
+        <div class="li-hint">Auto-filled when you select a coverage card below</div>
+      </div>
+      <div class="li">
+        <div class="li-lbl">LRP Net Premium ($/cwt)</div>
+        <input type="number" id="${o.id}-lrp-prem" placeholder="← From Live Quotes" step="0.0001" min="0" oninput="calcLRP('${o.id}')">
+        <div class="li-hint">Auto-filled from the selected coverage card below</div>
+      </div>
+    </div>
+
+    <div class="cov-lbl" id="${o.id}-cov-lbl">Select Coverage Level — click <strong>Get Quotes</strong> above to load live RMA rates for each level</div>
+    <div class="cov-row" id="${o.id}-covrow">
+      ${COV_PCTS.map(pct=>`
+      <div class="cov-card cov-card-live${pct===90?' sel':''}" onclick="pickCovLive('${o.id}',${pct},this)" data-pct="${pct}" id="${o.id}-card-${pct}">
+        <div class="cov-pct">${pct}%</div>
+        <div class="cov-floor" id="${o.id}-cf-${pct}">Floor: —</div>
+        <div class="cov-loss"  id="${o.id}-cl-${pct}">—</div>
+        <div class="cov-prem"><b id="${o.id}-cprem-${pct}">—</b><span> net/cwt</span></div>
+        <div class="cov-prem-hd" id="${o.id}-cpremhd-${pct}"></div>
+        <div class="cov-sub-saved" id="${o.id}-csub-${pct}"></div>
+        <div class="cov-net" id="${o.id}-cn-${pct}"></div>
+      </div>`).join('')}
+    </div>
+
+    <div class="cmp">
+      <div class="cmp-col">
+        <div class="cmp-head un">⚠️ Uninsured Scenario</div>
+        <div class="cmp-body">
+          <div class="cmp-row"><span class="cmp-rl">Total cost / head</span>              <span class="cmp-rv" id="${o.id}-u-cost">—</span></div>
+          <div class="cmp-row"><span class="cmp-rl">Revenue at expected market</span>     <span class="cmp-rv" id="${o.id}-u-rev">—</span></div>
+          <div class="cmp-row"><span class="cmp-rl">Net / head at expected market</span>  <span class="cmp-rv" id="${o.id}-u-net0">—</span></div>
+          <div class="cmp-row"><span class="cmp-rl">Net / head if market −10%</span>      <span class="cmp-rv" id="${o.id}-u-d10">—</span></div>
+          <div class="cmp-row"><span class="cmp-rl">Net / head if market −20%</span>      <span class="cmp-rv" id="${o.id}-u-d20">—</span></div>
+          <div class="cmp-row"><span class="cmp-rl">Maximum loss for the herd (−20%)</span><span class="cmp-rv" id="${o.id}-u-maxloss">—</span></div>
+        </div>
+        <div class="cmp-foot un"><span>Unprotected Net / Head</span><span id="${o.id}-u-foot">—</span></div>
+      </div>
+      <div class="cmp-col">
+        <div class="cmp-head ins">✅ With LRP Coverage</div>
+        <div class="cmp-body">
+          <div class="cmp-row"><span class="cmp-rl">Total cost / head (incl. premium)</span><span class="cmp-rv" id="${o.id}-i-cost">—</span></div>
+          <div class="cmp-row"><span class="cmp-rl">LRP floor price (selected level)</span> <span class="cmp-rv" id="${o.id}-i-floor">—</span></div>
+          <div class="cmp-row"><span class="cmp-rl">Net / head at expected market</span>    <span class="cmp-rv" id="${o.id}-i-net0">—</span></div>
+          <div class="cmp-row"><span class="cmp-rl">Net / head if market −10%</span>        <span class="cmp-rv" id="${o.id}-i-d10">—</span></div>
+          <div class="cmp-row"><span class="cmp-rl">Net / head if market −20%</span>        <span class="cmp-rv" id="${o.id}-i-d20">—</span></div>
+          <div class="cmp-row"><span class="cmp-rl">Maximum loss protected for the herd</span><span class="cmp-rv pos" id="${o.id}-i-saved">—</span></div>
+        </div>
+        <div class="cmp-foot ins"><span>Protected Net / Head</span><span id="${o.id}-i-foot">—</span></div>
+      </div>
+    </div>
+
+    <div class="scen">
+      <div class="scen-lbl">Market Price Scenarios — Net $/Head: Uninsured vs. With LRP</div>
+      <div class="scen-bars" id="${o.id}-scen">
+        <div style="font-size:.76rem;color:var(--stone);padding:8px 0">Enter input costs and LRP details above to see the scenario comparison.</div>
+      </div>
+      <div class="scen-legend">
+        <div class="sl"><div class="sl-sw" style="background:rgba(168,32,32,.4)"></div>Uninsured net/hd</div>
+        <div class="sl"><div class="sl-sw" style="background:var(--grass)"></div>Insured net/hd</div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <label>LRP Notes — ${o.name}</label>
+      <textarea id="${o.id}-lrp-notes" placeholder="Coverage level selected, endorsement length, premium quoted, producer questions, next steps..."></textarea>
+    </div>
+  </div>
+</div>`).join('');
+
+  // Build cost table rows
+  OPS.forEach(o=>{
+    const tbody = $(o.id+'-tbody');
+    CATS.forEach(c=>{
+      const isCCPurchase = o.ccWizard && c.key==='purchase';
+      const lbl = isCCPurchase ? 'Cost of Calf at Birth' : c.lbl;
+      const tip = isCCPurchase ? 'Auto-filled from the Cow/Calf Cost of Production Wizard above' : c.tip;
+      const ico = isCCPurchase ? '🐄' : c.ico;
+      // ccWizard purchase row: wizard-filled (not readonly, styled like auto)
+      const isReadonly = c.auto && !isCCPurchase;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="c-lbl" title="${tip}"><span class="c-ico">${ico}</span>${lbl}${isCCPurchase?'<small style="display:block;font-size:.65rem;color:var(--grass);margin-top:2px">▲ Auto-filled from wizard above</small>':''}</td>
+        <td class="c-in">
+          <input type="number" id="${o.id}-${c.key}"
+            placeholder="${c.auto?'auto':'0.00'}" step="0.01" min="0"
+            ${isReadonly?'readonly tabindex="-1"':''}
+            oninput="recalc('${o.id}')">
+        </td>
+        <td class="c-cm" id="${o.id}-${c.key}-tot">—</td>
+        <td class="c-cm" id="${o.id}-${c.key}-pct">—</td>`;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════
+   COST RECALC
+═══════════════════════════════════════════ */
+function recalc(op){
+  syncWizardAuto(op);
+  const head      = numIn(op+'-head');
+  const buywt     = numIn(op+'-buywt');
+  const buyprice  = numIn(op+'-buyprice');
+  const sellwt    = numIn(op+'-sellwt');
+  const sellprice = numIn(op+'-sellprice');
+
+  // For Spring Calves, purchase cost comes from the cow/calf wizard (already in the field)
+  // For all others, auto-calculate from buy weight × buy price
+  if(op !== 'springcalf'){
+    const purchCost = (buywt / 100) * buyprice;
+    const purchEl   = $(op+'-purchase');
+    if(purchEl){ purchEl.value = purchCost>0 ? purchCost.toFixed(2) : ''; purchEl.placeholder = purchCost>0?'':'auto'; }
+  }
+
+  // Sum all category costs per head
+  let totalHd = 0;
+  const vals  = {};
+  CATS.forEach(c=>{ const v=parseFloat($(op+'-'+c.key)?.value)||0; vals[c.key]=v; totalHd+=v; });
+
+  // Per-row computed columns
+  CATS.forEach(c=>{
+    const tEl = $(op+'-'+c.key+'-tot');
+    const pEl = $(op+'-'+c.key+'-pct');
+    if(vals[c.key]>0){
+      tEl.textContent = head>0 ? money(vals[c.key]*head,0) : money(vals[c.key]);
+      tEl.classList.add('v');
+      pEl.textContent = totalHd>0 ? (vals[c.key]/totalHd*100).toFixed(1)+'%' : '—';
+      pEl.classList.add('v');
+    } else {
+      tEl.textContent='—'; tEl.classList.remove('v');
+      pEl.textContent='—'; pEl.classList.remove('v');
+    }
+  });
+
+  // Footer
+  $(op+'-tot-hd').textContent   = totalHd>0 ? money(totalHd) : '—';
+  $(op+'-tot-herd').textContent = totalHd>0&&head>0 ? money(totalHd*head,0) : '—';
+
+  // Breakeven: total cost ÷ (sell wt in cwt)
+  const sellCwt = sellwt/100;
+  const beCwt   = sellCwt>0 && totalHd>0 ? totalHd/sellCwt : null;
+  $(op+'-be-hd').textContent  = totalHd>0 ? money(totalHd) : '—';
+  $(op+'-be-cwt').textContent = beCwt     ? money(beCwt)   : '—';
+
+  // Revenue & net
+  const rev = sellCwt>0 && sellprice>0 ? sellCwt*sellprice : null;
+  const net = rev!==null && totalHd>0   ? rev-totalHd       : null;
+  $(op+'-rev').textContent = rev ? money(rev) : '—';
+  const netEl = $(op+'-net');
+  if(net!==null){ netEl.textContent=money(net); netEl.style.color=net>=0?'var(--grn)':'var(--red)'; netEl.style.fontWeight='600'; }
+  else           { netEl.textContent='—'; netEl.style.color=''; netEl.style.fontWeight=''; }
+
+  // Risk gauge
+  riskGauge(op, totalHd, rev);
+
+  // Sidebar
+  const disp = totalHd>0 ? money(totalHd,0)+'/hd' : '—';
+  $('tabval-'+op).textContent = disp;
+  $('sumv-'+op).textContent   = totalHd>0 ? money(totalHd,0) : '—';
+  refreshBE();
+
+  // Cascade to LRP
+  calcLRP(op);
+}
+
+function refreshBE(){
+  let best=null;
+  OPS.forEach(o=>{
+    let t=0; CATS.forEach(c=>{ t+=parseFloat($(o.id+'-'+c.key)?.value)||0; });
+    const sw=numIn(o.id+'-sellwt');
+    if(t>0&&sw>0){ const be=t/(sw/100); if(!best||be<best.val) best={val:be,id:o.id}; }
+  });
+  $('sumv-be').textContent = best ? money(best.val)+'/cwt' : '—';
+}
+
+function riskGauge(op, cost, rev){
+  const pin = $(op+'-pin');
+  const msg = $(op+'-rmsg');
+  if(!cost||!rev){ pin.style.left='50%'; msg.className='risk-msg'; msg.textContent=''; return; }
+  const r = cost/rev;
+  let pct,cls,txt;
+  if(r<0.75){
+    pct=r/0.75*33; cls='g';
+    txt=`✓ Healthy margin. Input costs are ${(r*100).toFixed(0)}% of expected revenue. Good buffer before breakeven — LRP can lock in that margin even if markets move.`;
+  } else if(r<0.92){
+    pct=33+(r-0.75)/0.17*34; cls='w';
+    txt=`⚠ Moderate risk. Input costs are ${(r*100).toFixed(0)}% of expected revenue. A modest price decline could put this run below breakeven. LRP coverage is strongly recommended.`;
+  } else {
+    pct=Math.min(67+(r-0.92)/0.1*33,98); cls='r';
+    txt=`⚠ High risk. Input costs are ${(r*100).toFixed(0)}% of expected revenue. Very little margin for a price decline. Review the LRP tab — comprehensive coverage is critical.`;
+  }
+  pin.style.left=pct.toFixed(1)+'%';
+  msg.className=`risk-msg ${cls}`;
+  msg.textContent=txt;
+}
+
+/* ═══════════════════════════════════════════
+   LRP CALC
+═══════════════════════════════════════════ */
+function calcLRP(op){
+  const lrpWt  = numIn(op+'-lrp-wt');
+  const eev    = numIn(op+'-lrp-eev');
+  const prem   = numIn(op+'-lrp-prem');
+  const lrpHd  = numIn(op+'-lrp-head');
+  const covPct = activeCov[op]/100;
+
+  // Grab total cost from costs tab
+  let cost=0; CATS.forEach(c=>{ cost+=parseFloat($(op+'-'+c.key)?.value)||0; });
+
+  const premHd     = prem*lrpWt;         // premium cost per head
+  const hasEEV     = eev>0 && lrpWt>0;
+  const hasCost    = cost>0;
+  const hasPrem    = prem>0;
+  const hasAll     = hasEEV && hasCost && hasPrem;
+
+  /* ── Coverage level cards ── */
+  COV_PCTS.forEach(pct=>{
+    const fEl = $(op+'-cf-'+pct);
+    const lEl = $(op+'-cl-'+pct);
+    const nEl = $(op+'-cn-'+pct);
+    const card= document.querySelector(`#op-${op} .cov-card[data-pct="${pct}"]`);
+
+    if(hasEEV){
+      const floor       = eev*(pct/100);
+      // Max price loss per head = how much the producer loses per head
+      // if the market drops all the way to the floor (before LRP pays)
+      // = (EEV - floor) × insured cwt
+      const maxLossHd   = (eev-floor)*lrpWt;
+      const revAtFloor  = floor*lrpWt;
+      // Net per head if market hits exactly the floor:
+      // revenue at floor + LRP indemnity (= 0 at floor) - cost - premium
+      // Note: at exactly the floor the indemnity = 0 by definition,
+      // so net = revAtFloor - cost - premHd
+      const netAtFloor  = hasCost && hasPrem ? revAtFloor - cost - premHd : null;
+      const isOK        = netAtFloor !== null && netAtFloor >= 0;
+
+      fEl.textContent = `Floor: $${floor.toFixed(2)}/cwt`;
+      lEl.textContent = `Max price loss: ${money(maxLossHd)}/hd`;
+
+      // Color logic
+      card.classList.remove('ok','bad');
+      if(hasAll){
+        card.classList.add(isOK?'ok':'bad');
+        lEl.className  = 'cov-loss'; // inherits color from card via CSS
+        nEl.textContent= (netAtFloor>=0?'+':'')+money(netAtFloor)+' net at floor';
+        nEl.className  = 'cov-net';
+      } else {
+        lEl.className  = 'cov-loss';
+        nEl.textContent= hasCost ? 'Enter premium for net' : '';
+        nEl.className  = 'cov-net';
+      }
+    } else {
+      fEl.textContent='Floor: —';
+      lEl.textContent='Max price loss: —'; lEl.className='cov-loss';
+      nEl.textContent=''; nEl.className='cov-net';
+      card.classList.remove('ok','bad');
+    }
+  });
+
+  if(!hasEEV){ clearCmp(op); return; }
+
+  /* ── Core LRP math ── */
+  const floor   = eev*covPct;
+
+  // Uninsured net per head at a given market price
+  const unNet = p => (p*lrpWt) - cost;
+
+  // Insured net per head at a given market price:
+  // revenue at market + LRP indemnity - cost - premium
+  // LRP indemnity = max(0, floor - market) × lrpWt
+  const indem = p => Math.max(0, floor-p)*lrpWt;
+  const inNet = p => (p*lrpWt) + indem(p) - cost - premHd;
+
+  const d10 = eev*0.90;
+  const d20 = eev*0.80;
+
+  /* ── Uninsured column ── */
+  $(op+'-u-cost').textContent    = hasCost ? money(cost)           : '—';
+  $(op+'-u-rev').textContent     = money(eev*lrpWt);
+  setRV(op+'-u-net0', hasCost ? unNet(eev)  : null);
+  setRV(op+'-u-d10',  hasCost ? unNet(d10)  : null);
+  setRV(op+'-u-d20',  hasCost ? unNet(d20)  : null);
+
+  const maxHerdLoss = hasCost && lrpHd>0 ? unNet(d20)*lrpHd : null;
+  $(op+'-u-maxloss').textContent = maxHerdLoss!==null ? money(maxHerdLoss,0)+' total' : '—';
+  if(maxHerdLoss!==null) colorRV(op+'-u-maxloss', maxHerdLoss);
+
+  setRV(op+'-u-foot', hasCost ? unNet(eev) : null);
+
+  /* ── Insured column ── */
+  if(hasPrem){
+    $(op+'-i-cost').textContent  = hasCost ? money(cost+premHd)          : '—';
+    $(op+'-i-floor').textContent = `$${floor.toFixed(2)}/cwt (${activeCov[op]}% of EEV)`;
+    setRV(op+'-i-net0', hasCost ? inNet(eev) : null);
+    setRV(op+'-i-d10',  hasCost ? inNet(d10) : null);
+    setRV(op+'-i-d20',  hasCost ? inNet(d20) : null);
+
+    const saved = hasCost && lrpHd>0 ? (inNet(d20)-unNet(d20))*lrpHd : null;
+    $(op+'-i-saved').textContent = saved!==null ? money(saved,0)+' saved' : '—';
+    setRV(op+'-i-foot', hasCost ? inNet(eev) : null);
+  }
+
+  /* ── Scenario bars ── */
+  buildScen(op, eev, lrpWt, cost, premHd, unNet, inNet, hasCost);
+}
+
+function setRV(id, val){
+  const el = $(id); if(!el) return;
+  el.textContent = val!==null ? money(val) : '—';
+  colorRV(id, val);
+}
+
+function colorRV(id, val){
+  const el=$(id); if(!el) return;
+  el.classList.remove('pos','neg');
+  if(val===null) return;
+  if(val>0)  el.classList.add('pos');
+  if(val<0)  el.classList.add('neg');
+}
+
+function clearCmp(op){
+  ['u-cost','u-rev','u-net0','u-d10','u-d20','u-maxloss','u-foot',
+   'i-cost','i-floor','i-net0','i-d10','i-d20','i-saved','i-foot']
+  .forEach(s=>{ const el=$(op+'-'+s); if(el){ el.textContent='—'; el.classList.remove('pos','neg'); } });
+  const sc=$(op+'-scen');
+  if(sc) sc.innerHTML='<div style="font-size:.76rem;color:var(--stone);padding:8px 0">Enter input costs and LRP details above to see the scenario comparison.</div>';
+}
+
+function buildScen(op, eev, wt, cost, premHd, unFn, inFn, hasCost){
+  const el=$(op+'-scen'); if(!el) return;
+  if(!hasCost){ el.innerHTML='<div style="font-size:.76rem;color:var(--stone);padding:8px 0">Enter input costs above to see scenarios.</div>'; return; }
+
+  const scenarios=[
+    {lbl:'Market +10%', p:eev*1.10},
+    {lbl:'Market flat', p:eev},
+    {lbl:'Market −5%',  p:eev*0.95},
+    {lbl:'Market −10%', p:eev*0.90},
+    {lbl:'Market −15%', p:eev*0.85},
+    {lbl:'Market −20%', p:eev*0.80},
+  ];
+
+  const maxAbs=Math.max(...scenarios.map(s=>Math.max(Math.abs(unFn(s.p)),Math.abs(inFn(s.p)))),1);
+
+  el.innerHTML=scenarios.map(s=>{
+    const un=unFn(s.p), ins=inFn(s.p);
+    const wu=(Math.abs(un)/maxAbs*100).toFixed(1);
+    const wi=(Math.abs(ins)/maxAbs*100).toFixed(1);
+    const cu=un >=0?'rgba(36,110,24,.4)':'rgba(168,32,32,.45)';
+    const ci=ins>=0?'var(--grass)':'#c06820';
+    const tu=un >=0?'var(--grn)':'var(--red)';
+    const ti=ins>=0?'var(--grn)':'var(--warn)';
+    return `
+    <div class="scen-row">
+      <span class="scen-name">${s.lbl}</span>
+      <div class="scen-track">
+        <div class="s-un" style="width:${wu}%;background:${cu}"></div>
+        <div class="s-in" style="width:${wi}%;background:${ci}"></div>
+      </div>
+      <div class="scen-vals">
+        <span style="color:${tu};font-size:.64rem">${money(un)}</span>
+        <span style="color:${ti}">${money(ins)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════
+   COST BUILDER WIZARD
+═══════════════════════════════════════════ */
+
+function toggleWizard(op){
+  const body  = $(op+'-wzbody');
+  const arrow = $(op+'-wzarrow');
+  const open  = body.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+}
+
+/* sync read-only fields from meta inputs */
+function syncWizardAuto(op){
+  const buywt    = numIn(op+'-buywt');
+  const buyprice = numIn(op+'-buyprice');
+  const days     = numIn(op+'-days');
+  const purchCost = op==='springcalf' ? numIn(op+'-purchase') : (buywt/100)*buyprice;
+
+  const intPurch  = $(op+'-int-purchase');
+  const intDays   = $(op+'-int-days');
+  const dlPurch   = $(op+'-dl-purchase');
+  const intOpcost = $(op+'-int-opcost');
+
+  if(intPurch) intPurch.value = purchCost>0 ? purchCost.toFixed(2) : '';
+  if(intDays)  intDays.value  = days>0      ? days                 : '';
+  if(dlPurch)  dlPurch.value  = purchCost>0 ? purchCost.toFixed(2) : '';
+
+  // Auto-fill operating costs = sum of all cost table rows except purchase and interest
+  if(intOpcost){
+    const excludeKeys = ['purchase','interest'];
+    let opCostSum = 0;
+    CATS.forEach(c=>{
+      if(!excludeKeys.includes(c.key)){
+        opCostSum += parseFloat($(op+'-'+c.key)?.value)||0;
+      }
+    });
+    intOpcost.value = opCostSum>0 ? opCostSum.toFixed(2) : '';
+  }
+
+  calcInterest(op);
+  calcDeathLoss(op);
+}
+
+/* ── Feed ── */
+function calcFeed(op){
+  const days = numIn(op+'-days');
+  const feeds = ['hay','sil','grn','sup','c1'];
+  let totalCpd = 0;
+  feeds.forEach(f=>{
+    const lbs = numIn(op+`-fi-${f}-lbs`);
+    const ton = numIn(op+`-fi-${f}-ton`);
+    const cpd = lbs>0 && ton>0 ? (lbs/2000)*ton : 0; // lbs ÷ 2000 × $/ton = $/day
+    totalCpd += cpd;
+    const el = $(op+`-fi-${f}-cpd`);
+    if(el) el.textContent = cpd>0 ? ('$'+cpd.toFixed(3)) : '—';
+  });
+  $(op+'-feed-cpd-tot').textContent = totalCpd>0 ? ('$'+totalCpd.toFixed(3)+'/hd/day') : '—';
+  const totalHd = days>0 && totalCpd>0 ? totalCpd*days : null;
+  $(op+'-feed-total-hd').textContent = totalHd!==null ? money(totalHd)+'/hd total' : '—';
+}
+
+/* ── Pasture ── */
+function calcPasture(op){
+  const total  = numIn(op+'-past-total');
+  const head   = numIn(op+'-past-head');
+  const perHd  = numIn(op+'-past-perhd');
+  let result   = null;
+  if(perHd>0){
+    result = perHd;
+  } else if(total>0 && head>0){
+    result = total/head;
+  }
+  $(op+'-past-result').textContent = result!==null ? money(result)+'/head' : '—';
+}
+
+/* ── Interest ── */
+function calcInterest(op){
+  const purchase = numIn(op+'-int-purchase');
+  const opCost   = numIn(op+'-int-opcost');
+  const rate     = numIn(op+'-int-rate');
+  const days     = numIn(op+'-int-days');
+  if(purchase>0 && rate>0 && days>0){
+    const principal = purchase + opCost;
+    const interest  = principal * (rate/100) * (days/365);
+    $(op+'-int-result').textContent = money(interest)+'/head';
+  } else {
+    $(op+'-int-result').textContent = '—';
+  }
+}
+
+/* ── Death Loss ── */
+function calcDeathLoss(op){
+  const purchase = numIn(op+'-dl-purchase');
+  const rate     = numIn(op+'-dl-rate');
+  if(purchase>0 && rate>0){
+    const dl = purchase*(rate/100);
+    $(op+'-dl-result').textContent = money(dl)+'/head';
+  } else {
+    $(op+'-dl-result').textContent = '—';
+  }
+}
+
+/* ── Apply all wizard values to cost table ── */
+function applyWizard(op){
+  // Feed
+  const days = numIn(op+'-days');
+  const feeds = ['hay','sil','grn','sup','c1'];
+  let totalCpd = 0;
+  feeds.forEach(f=>{
+    const lbs = numIn(op+`-fi-${f}-lbs`);
+    const ton = numIn(op+`-fi-${f}-ton`);
+    totalCpd += (lbs>0 && ton>0) ? (lbs/2000)*ton : 0;
+  });
+  const feedTotal = days>0 && totalCpd>0 ? totalCpd*days : 0;
+  if(feedTotal>0){ const el=$(op+'-feed'); if(el) el.value=feedTotal.toFixed(2); }
+
+  // Pasture
+  const pastTotal = numIn(op+'-past-total');
+  const pastHead  = numIn(op+'-past-head');
+  const pastPerHd = numIn(op+'-past-perhd');
+  let pastResult  = 0;
+  if(pastPerHd>0) pastResult = pastPerHd;
+  else if(pastTotal>0 && pastHead>0) pastResult = pastTotal/pastHead;
+  if(pastResult>0){ const el=$(op+'-pasture'); if(el) el.value=pastResult.toFixed(2); }
+
+  // Interest
+  const purchase = numIn(op+'-int-purchase');
+  const opCost   = numIn(op+'-int-opcost');
+  const rate     = numIn(op+'-int-rate');
+  const intDays  = numIn(op+'-int-days');
+  if(purchase>0 && rate>0 && intDays>0){
+    const interest = (purchase+opCost)*(rate/100)*(intDays/365);
+    const el=$(op+'-interest'); if(el) el.value=interest.toFixed(2);
+  }
+
+  // Death Loss
+  const dlPurch = numIn(op+'-dl-purchase');
+  const dlRate  = numIn(op+'-dl-rate');
+  if(dlPurch>0 && dlRate>0){
+    const dl = dlPurch*(dlRate/100);
+    const el=$(op+'-death'); if(el) el.value=dl.toFixed(2);
+  }
+
+  // Trigger recalc
+  recalc(op);
+
+  // Show confirmation
+  const conf = $(op+'-wiz-applied');
+  if(conf){ conf.style.display='inline'; setTimeout(()=>conf.style.display='none', 2500); }
+}
+
+/* ═══════════════════════════════════════════
+   COW/CALF WIZARD — SPRING CALVES
+═══════════════════════════════════════════ */
+
+function toggleCCWizard(op){
+  const body  = $(op+'-cc-wzbody');
+  const arrow = $(op+'-cc-arrow');
+  if(!body) return;
+  const open = body.classList.toggle('open');
+  if(arrow) arrow.classList.toggle('open', open);
+}
+
+function ccWizardFill(id, val){
+  const el = $(id); if(!el) return;
+  if(val > 0){
+    if(el.value==='' || el.hasAttribute('data-ccwiz')){
+      el.value = val.toFixed(2);
+      el.setAttribute('data-ccwiz','1');
+      el.style.background = 'var(--grass-p)';
+      el.style.color = 'var(--grass)';
+    }
+  } else {
+    if(el.hasAttribute('data-ccwiz')){
+      el.value = ''; el.removeAttribute('data-ccwiz');
+      el.style.background = ''; el.style.color = '';
+    }
+  }
+}
+
+function recalcCC(op){
+  const p = op+'-cc-';
+  const cows     = numIn(p+'cows');
+  const calvePct = numIn(p+'calvepct');
+  const dlPct    = numIn(p+'deathloss');
+  const calves   = cows>0 && calvePct>0 ? cows*(calvePct/100)*(1-dlPct/100) : 0;
+
+  // Run all section calcs — returns $/cow/year values directly
+  const cowDeprVal  = calcCCDepr(op, true);
+  const bullDeprVal = calcCCDeprBull(op);
+  const feedVal     = calcCCFeed(op, true);
+  const pastVal     = calcCCPasture(op, true);
+  const vetVal      = calcCCVet(op, true);
+  const intVal      = calcCCInterest(op, true);
+  const eqVal       = calcCCEquipment(op, true);
+  const labVal      = calcCCLabor(op, true);
+
+  // Misc rows
+  let miscTotal = 0;
+  [1,2,3].forEach(n=>{
+    const v = numIn(p+'misc'+n+'-cost');
+    const totEl = $(p+'misc'+n+'-tot');
+    if(totEl) totEl.textContent = v>0 ? money(v) : '—';
+    miscTotal += v;
+  });
+  const miscSecEl = $(p+'misc-result-sec');
+  if(miscSecEl) miscSecEl.textContent = miscTotal>0 ? money(miscTotal)+'/cow' : '—';
+  const miscTotEl = $(p+'misc-total');
+  if(miscTotEl) miscTotEl.textContent = miscTotal>0 ? money(miscTotal) : '—';
+
+  const totalPerCow = cowDeprVal + bullDeprVal + feedVal + pastVal + vetVal + intVal + eqVal + labVal + miscTotal;
+  const costPerCalf = calves>0 && totalPerCow>0 ? (totalPerCow*cows)/calves : null;
+
+  const calvDisp = $(p+'calves-display');
+  if(calvDisp) calvDisp.textContent = calves>0 ? Math.round(calves)+' head' : '—';
+
+  const cpcEl = $(p+'costpercow');      if(cpcEl)  cpcEl.textContent  = totalPerCow>0 ? money(totalPerCow) : '—';
+  const calfEl= $(p+'costpercalf');     if(calfEl) calfEl.textContent = costPerCalf ? money(costPerCalf) : '—';
+  const hdEl  = $(p+'headcount');       if(hdEl)   hdEl.textContent   = calves>0 ? Math.round(calves)+' head' : '—';
+  const bigEl = $(p+'costpercalf-big'); if(bigEl)  bigEl.textContent  = costPerCalf ? money(costPerCalf) : '—';
+
+  if(costPerCalf){
+    ccWizardFill(op+'-purchase', costPerCalf);
+    const noteEl = $(p+'autofill-note');
+    if(noteEl) noteEl.textContent = `\u2756 Auto-filled: ${money(costPerCalf)}/calf \u2192 Cost of Calf at Birth row. ${calves>0?Math.round(calves)+' calves':'\u2014'} head count set.`;
+    const headEl = $(op+'-head');
+    if(headEl && (headEl.value==='' || headEl.hasAttribute('data-ccwiz'))){
+      headEl.value = Math.round(calves);
+      headEl.setAttribute('data-ccwiz','1');
+    }
+  }
+  recalc(op);
+}
+
+// Returns cow depreciation $/cow/year
+function calcCCDepr(op, skipRecalc){
+  const p = op+'-cc-';
+  const cowReplace = numIn(p+'depr-cow-replace');
+  const cowSalvage = numIn(p+'depr-cow-salvage');
+  const cowYears   = numIn(p+'depr-cow-years');
+  const cowDepr    = cowReplace>0 && cowYears>0 ? Math.max(0,(cowReplace-cowSalvage)/cowYears) : null;
+
+  const bullPrice  = numIn(p+'depr-bull-price');
+  const bullYears  = numIn(p+'depr-bull-years');
+  const bullCows   = numIn(p+'depr-bull-cows');
+  const bullDepr   = bullPrice>0 && bullYears>0 && bullCows>0 ? (bullPrice/bullYears)/bullCows : null;
+
+  const cowResEl = $(p+'depr-cow-result'); if(cowResEl) cowResEl.textContent = cowDepr!==null ? money(cowDepr) : '\u2014';
+  const bulResEl = $(p+'depr-bull-result'); if(bulResEl) bulResEl.textContent = bullDepr!==null ? money(bullDepr) : '\u2014';
+  const total = (cowDepr||0)+(bullDepr||0);
+  const secEl = $(p+'depr-result-sec'); if(secEl) secEl.textContent = total>0 ? money(total)+'/cow' : '\u2014';
+
+  // Mirror to cost table rows (display only — recalcCC uses returned values)
+  const cowInput = $(op+'-cowdepr');
+  const bulInput = $(op+'-bulldepr');
+  if(cowInput && cowDepr!==null){ cowInput.value=cowDepr.toFixed(2); cowInput.style.background='var(--gold-p)'; cowInput.style.color='var(--hide)'; }
+  else if(cowInput && cowReplace===0){ cowInput.value=''; cowInput.style.background=''; cowInput.style.color=''; }
+  if(bulInput && bullDepr!==null){ bulInput.value=bullDepr.toFixed(2); bulInput.style.background='var(--gold-p)'; bulInput.style.color='var(--hide)'; }
+  else if(bulInput && bullPrice===0){ bulInput.value=''; bulInput.style.background=''; bulInput.style.color=''; }
+
+  if(!skipRecalc) recalcCC(op);
+  return cowDepr||0;
+}
+
+// Returns bull depreciation $/cow/year (used separately in recalcCC sum)
+function calcCCDeprBull(op){
+  const p = op+'-cc-';
+  const bullPrice = numIn(p+'depr-bull-price');
+  const bullYears = numIn(p+'depr-bull-years');
+  const bullCows  = numIn(p+'depr-bull-cows');
+  return bullPrice>0 && bullYears>0 && bullCows>0 ? (bullPrice/bullYears)/bullCows : 0;
+}
+
+function calcCCFeed(op, skipRecalc){
+  const p    = op+'-cc-';
+  const cows = numIn(p+'cows');
+  function lbsDaysTon(a,b,c,r){ const lbs=numIn(p+a),days=numIn(p+b),ton=numIn(p+c); const v=(lbs>0&&days>0&&ton>0)?(lbs*days/2000)*ton:null; const el=$(p+r); if(el) el.textContent=v!==null?money(v):'\u2014'; return v||0; }
+  function monthDiv(a,b,r){ const mo=numIn(p+a),mos=numIn(p+b); const v=(mo>0&&mos>0&&cows>0)?(mo*mos)/cows:null; const el=$(p+r); if(el) el.textContent=v!==null?money(v)+'/cow':(cows===0?'Enter # cows':'\u2014'); return v||0; }
+  const hay=lbsDaysTon('hay-lbs','hay-days','hay-ton','hay-cow');
+  const silage=lbsDaysTon('silage-lbs','silage-days','silage-ton','silage-cow');
+  const cubes=lbsDaysTon('cubes-lbs','cubes-days','cubes-ton','cubes-cow');
+  const tubs=monthDiv('tubs-month','tubs-months','tubs-cow');
+  const mineral=monthDiv('mineral-month','mineral-months','mineral-cow');
+  let miscFeed=0; [1,2,3].forEach(n=>{ const v=numIn(p+'feedmisc'+n+'-cost'); const el=$(p+'feedmisc'+n+'-tot'); if(el) el.textContent=v>0?money(v):'\u2014'; miscFeed+=v; });
+  const total=hay+silage+cubes+tubs+mineral+miscFeed;
+  const totEl=$(p+'feed-total'); if(totEl) totEl.textContent=total>0?money(total):'\u2014';
+  const secEl=$(p+'feed-result-sec'); if(secEl) secEl.textContent=total>0?money(total)+'/cow':'\u2014';
+  if(!skipRecalc) recalcCC(op);
+  return total;
+}
+
+function calcCCPasture(op, skipRecalc){
+  const p=op+'-cc-'; const cows=numIn(p+'cows');
+  const rA=numIn(p+'past-rent-acres'),rR=numIn(p+'past-rent-rate'); const rC=(rA>0&&rR>0&&cows>0)?(rA*rR)/cows:0; const rcEl=$(p+'past-rent-cow'); if(rcEl) rcEl.textContent=rC>0?money(rC):'\u2014';
+  const lR=numIn(p+'past-lease-rate'),lM=numIn(p+'past-lease-months'); const lC=(lR>0&&lM>0)?lR*lM:0; const lcEl=$(p+'past-lease-cow'); if(lcEl) lcEl.textContent=lC>0?money(lC):'\u2014';
+  const dP=numIn(p+'past-debt-payment'); const dC=(dP>0&&cows>0)?dP/cows:0; const dcEl=$(p+'past-debt-cow'); if(dcEl) dcEl.textContent=dC>0?money(dC):'\u2014';
+  const fT=numIn(p+'past-fert-total'); const fC=(fT>0&&cows>0)?fT/cows:0; const fcEl=$(p+'past-fert-cow'); if(fcEl) fcEl.textContent=fC>0?money(fC):'\u2014';
+  const tT=numIn(p+'past-tax-total'); const tC=(tT>0&&cows>0)?tT/cows:0; const tcEl=$(p+'past-tax-cow'); if(tcEl) tcEl.textContent=tC>0?money(tC):'\u2014';
+  const mT=numIn(p+'past-maint-total'); const mC=(mT>0&&cows>0)?mT/cows:0; const mcEl=$(p+'past-maint-cow'); if(mcEl) mcEl.textContent=mC>0?money(mC):'\u2014';
+  const total=rC+lC+dC+fC+tC+mC;
+  const totEl=$(p+'past-total'); if(totEl) totEl.textContent=total>0?money(total):'\u2014';
+  const secEl=$(p+'past-result-sec'); if(secEl) secEl.textContent=total>0?money(total)+'/cow':'\u2014';
+  if(!skipRecalc) recalcCC(op);
+  return total;
+}
+
+function calcCCVet(op, skipRecalc){
+  const p=op+'-cc-'; const cows=numIn(p+'cows');
+  const vPH=numIn(p+'vet-vacc-perhead'); const vAC=vPH>0?vPH:0; const vael=$(p+'vet-vacc-a-cow'); if(vael) vael.textContent=vAC>0?money(vAC):'\u2014';
+  const vBill=numIn(p+'vet-vacc-bill'); const vBC=(vBill>0&&cows>0)?vBill/cows:0; const vbel=$(p+'vet-vacc-b-cow'); if(vbel) vbel.textContent=vBC>0?money(vBC):'\u2014';
+  const fPH=numIn(p+'vet-fly-perhead'); const fAC=fPH>0?fPH:0; const fael=$(p+'vet-fly-a-cow'); if(fael) fael.textContent=fAC>0?money(fAC):'\u2014';
+  const fBill=numIn(p+'vet-fly-bill'); const fBC=(fBill>0&&cows>0)?fBill/cows:0; const fbel=$(p+'vet-fly-b-cow'); if(fbel) fbel.textContent=fBC>0?money(fBC):'\u2014';
+  const pPH=numIn(p+'vet-preg-perhead'),pHd=numIn(p+'vet-preg-head'); const pC=(pPH>0&&pHd>0&&cows>0)?(pPH*pHd)/cows:0; const pcel=$(p+'vet-preg-cow'); if(pcel) pcel.textContent=pC>0?money(pC):'\u2014';
+  const sAnn=numIn(p+'vet-sick-annual'); const sAC=(sAnn>0&&cows>0)?sAnn/cows:0; const sael=$(p+'vet-sick-a-cow'); if(sael) sael.textContent=sAC>0?money(sAC):'\u2014';
+  const sPct=numIn(p+'vet-sick-pct'),sCst=numIn(p+'vet-sick-cost'); const sBC=(sPct>0&&sCst>0)?(sPct/100)*sCst:0; const sbel=$(p+'vet-sick-b-cow'); if(sbel) sbel.textContent=sBC>0?money(sBC):'\u2014';
+  const total=vAC+vBC+fAC+fBC+pC+(sAC>0?sAC:sBC);
+  const totEl=$(p+'vet-total'); if(totEl) totEl.textContent=total>0?money(total):'\u2014';
+  const secEl=$(p+'vet-result-sec'); if(secEl) secEl.textContent=total>0?money(total)+'/cow':'\u2014';
+  if(!skipRecalc) recalcCC(op);
+  return total;
+}
+
+function calcCCInterest(op, skipRecalc){
+  const p=op+'-cc-'; const cows=numIn(p+'cows');
+  const nB=numIn(p+'int-note-bal'),nR=numIn(p+'int-note-rate'); const nC=(nB>0&&nR>0&&cows>0)?(nB*(nR/100))/cows:0; const ncel=$(p+'int-note-cow'); if(ncel) ncel.textContent=nC>0?money(nC):'\u2014';
+  const oAnn=numIn(p+'int-op-annual'); const oAC=(oAnn>0&&cows>0)?oAnn/cows:0; const oael=$(p+'int-op-a-cow'); if(oael) oael.textContent=oAC>0?money(oAC):'\u2014';
+  const oBal=numIn(p+'int-op-bal'),oRt=numIn(p+'int-op-rate'); const oBC=(oBal>0&&oRt>0&&cows>0)?(oBal*(oRt/100))/cows:0; const obel=$(p+'int-op-b-cow'); if(obel) obel.textContent=oBC>0?money(oBC):'\u2014';
+  const opCow=oAC>0&&oBC>0?Math.max(oAC,oBC):oAC+oBC;
+  const total=nC+opCow;
+  const totEl=$(p+'int-total'); if(totEl) totEl.textContent=total>0?money(total):'\u2014';
+  const secEl=$(p+'int-result-sec'); if(secEl) secEl.textContent=total>0?money(total)+'/cow':'\u2014';
+  if(!skipRecalc) recalcCC(op);
+  return total;
+}
+
+function calcCCEquipment(op, skipRecalc){
+  const p=op+'-cc-'; const cows=numIn(p+'cows');
+  const oV=numIn(p+'eq-owned-val'),oY=numIn(p+'eq-owned-years'); const oC=(oV>0&&oY>0&&cows>0)?(oV/oY)/cows:0; const ocel=$(p+'eq-owned-cow'); if(ocel) ocel.textContent=oC>0?money(oC):'\u2014';
+  const fP=numIn(p+'eq-fin-payments'); const fC=(fP>0&&cows>0)?fP/cows:0; const fcel=$(p+'eq-fin-cow'); if(fcel) fcel.textContent=fC>0?money(fC):'\u2014';
+  const pct=numIn(p+'eq-pct'); const combined=oC+fC; const final=combined>0&&pct>0?combined*(pct/100):combined;
+  const ffel=$(p+'eq-final-cow'); if(ffel) ffel.textContent=final>0?money(final):'\u2014';
+  const totEl=$(p+'eq-total'); if(totEl) totEl.textContent=final>0?money(final):'\u2014';
+  const secEl=$(p+'eq-result-sec'); if(secEl) secEl.textContent=final>0?money(final)+'/cow':'\u2014';
+  if(!skipRecalc) recalcCC(op);
+  return final;
+}
+
+function calcCCLabor(op, skipRecalc){
+  const p=op+'-cc-'; const cows=numIn(p+'cows');
+  const oH=numIn(p+'lab-owner-hrs'),oW=numIn(p+'lab-owner-wage'),oPct=numIn(p+'lab-owner-pct');
+  const oC=(oH>0&&oW>0&&oPct>0&&cows>0)?(oH*52*oW*(oPct/100))/cows:0;
+  const ocel=$(p+'lab-owner-cow'); if(ocel) ocel.textContent=oC>0?money(oC):'\u2014';
+  const inc=$(p+'lab-owner-include')?.checked||false;
+  const hH=numIn(p+'lab-hired-hrs'),hW=numIn(p+'lab-hired-wage'),hPct=numIn(p+'lab-hired-pct');
+  const hAC=(hH>0&&hW>0&&hPct>0&&cows>0)?(hH*52*hW*(hPct/100))/cows:0;
+  const hael=$(p+'lab-hired-a-cow'); if(hael) hael.textContent=hAC>0?money(hAC):'\u2014';
+  const sA=numIn(p+'lab-sal-amount'),sPct=numIn(p+'lab-sal-pct');
+  const hBC=(sA>0&&sPct>0&&cows>0)?(sA*(sPct/100))/cows:0;
+  const hbel=$(p+'lab-hired-b-cow'); if(hbel) hbel.textContent=hBC>0?money(hBC):'\u2014';
+  const total=(inc?oC:0)+hAC+hBC;
+  const totEl=$(p+'lab-total'); if(totEl) totEl.textContent=total>0?money(total):'\u2014';
+  const secEl=$(p+'lab-result-sec'); if(secEl) secEl.textContent=total>0?money(total)+'/cow':'\u2014';
+  if(!skipRecalc) recalcCC(op);
+  return total;
+}
+
+/* ═══════════════════════════════════════════
+   LRP LIVE QUOTE FETCHER  (v7 — end date + per-level cards)
+═══════════════════════════════════════════ */
+
+// Available LRP endorsement lengths in weeks
+const LRP_WEEKS = [13,17,21,26,30,34,39,43,47,52];
+
+// Subsidy rates by coverage level (producer pays remainder)
+const LRP_SUBSIDY = {70:0.55, 75:0.50, 80:0.50, 85:0.45, 90:0.35, 95:0.20, 100:0.13};
+
+// Per-op storage: { weeks, endDate, rowsByLevel: {70:{eev,covPx,rate}, ...} }
+const lrpLiveData = {};
+
+// Status helpers
+function setStatus(op, state, msg){
+  const dot  = $(op+'-sdot');
+  const text = $(op+'-stext');
+  if(!dot||!text) return;
+  dot.className  = 'lrp-status-dot'+(state?' '+state:'');
+  text.textContent = msg;
+}
+
+// Called when agent changes the marketing date
+function onEndDateChange(op){
+  const dateInput = $(op+'-fc-enddate');
+  const hint      = $(op+'-fc-weeksHint');
+  if(!dateInput||!dateInput.value){ if(hint) hint.textContent=''; return; }
+
+  const today   = new Date();
+  today.setHours(0,0,0,0);
+  const target  = new Date(dateInput.value+'T00:00:00');
+  const diffDays= Math.round((target-today)/86400000);
+  const diffWks = diffDays/7;
+
+  // Find the closest available endorsement length
+  let closest = LRP_WEEKS[0];
+  let minDiff = Infinity;
+  LRP_WEEKS.forEach(w=>{ const d=Math.abs(w-diffWks); if(d<minDiff){minDiff=d;closest=w;} });
+
+  if(diffDays < 13*7){
+    hint.textContent = '⚠ Date is less than 13 weeks out — minimum LRP period is 13 weeks';
+    hint.style.color = 'var(--red-b)';
+  } else if(diffDays > 52*7){
+    hint.textContent = '⚠ Date is more than 52 weeks out — maximum LRP period is 52 weeks';
+    hint.style.color = 'var(--red-b)';
+  } else {
+    hint.textContent = `→ Closest endorsement: ${closest}-week period (${diffDays} days / ${diffWks.toFixed(1)} wks from today)`;
+    hint.style.color = 'var(--hide-l)';
+  }
+}
+
+// Get today as MM/DD/YYYY
+function todayRMA(){
+  const d  = new Date();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${mm}/${dd}/${d.getFullYear()}`;
+}
+
+// Determine target weeks from the end date input
+function getTargetWeeks(op){
+  const dateInput = $(op+'-fc-enddate');
+  if(!dateInput||!dateInput.value) return null;
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const target  = new Date(dateInput.value+'T00:00:00');
+  const diffWks = Math.round((target-today)/86400000)/7;
+  let closest = LRP_WEEKS[0], minDiff = Infinity;
+  LRP_WEEKS.forEach(w=>{ const d=Math.abs(w-diffWks); if(d<minDiff){minDiff=d;closest=w;} });
+  return {weeks:closest, endDate:dateInput.value};
+}
+
+// Main fetch
+async function fetchLRP(op){
+  const commodity = $(op+'-fc-commodity').value;
+  const wtClass   = $(op+'-fc-wt').value;
+  const state     = $(op+'-fc-state').value;
+  const resultsEl = $(op+'-fetch-results');
+  const btn       = $(op+'-fetch-btn');
+  const hintEl    = $(op+'-fetch-hint');
+
+  // Validate end date
+  const twk = getTargetWeeks(op);
+  if(!twk){
+    resultsEl.innerHTML = '<div class="lrp-fetch-msg err">Please enter the producer\'s expected marketing date before fetching quotes.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  setStatus(op,'loading',`Fetching ${twk.weeks}-week quotes from USDA RMA…`);
+  resultsEl.innerHTML = '<div class="lrp-fetch-msg">Connecting to USDA RMA…</div>';
+  if(hintEl) hintEl.textContent = '';
+
+  try {
+    const dateStr   = todayRMA();
+    const targetUrl = `https://public.rma.usda.gov/livestockreports/LRPReport.aspx`+
+      `?ReportType=W&EffectiveDate=${encodeURIComponent(dateStr)}`+
+      `&Commodity=${commodity}&State=${state}&Submit=Submit`;
+
+    // Proxy chain — Netlify function first (own server, most reliable),
+    // then public proxies as fallback
+    const isHosted  = location.protocol === 'https:';
+    const fnBase    = location.origin + '/.netlify/functions/lrp';
+
+    const proxies = [
+      // Our own Netlify function — only works when hosted on Netlify
+      ...(isHosted ? [{
+        name: 'Agrowise server',
+        build: () => `${fnBase}?date=${encodeURIComponent(dateStr)}&commodity=${commodity}&state=${state}`,
+        extract: async r => { const j=await r.json(); return j.html||''; }
+      }] : []),
+      // Public fallbacks
+      { name: 'corsproxy.io',
+        build: () => `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
+        extract: async r => await r.text() },
+      { name: 'allorigins',
+        build: () => `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+        extract: async r => { const j=await r.json(); return j.contents||''; } },
+      { name: 'codetabs',
+        build: () => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(targetUrl)}`,
+        extract: async r => await r.text() },
+    ];
+
+    let html = null;
+    let lastErr = '';
+    for(const proxy of proxies){
+      try {
+        setStatus(op,'loading',`Connecting via ${proxy.name}…`);
+        const resp = await fetch(proxy.build());
+        if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const content = await proxy.extract(resp);
+        if(content && content.length > 200){ html = content; break; }
+        throw new Error('Empty response');
+      } catch(e){
+        lastErr = e.message;
+        console.warn(`Proxy ${proxy.name} failed:`, e.message);
+      }
+    }
+
+    if(!html) throw new Error(`All proxies failed. Last: ${lastErr}`);
+    if(!html) throw new Error('Empty response');
+
+    // Parse all rows for the target week length
+    const allRows = parseLRPHtml(html, commodity, wtClass, twk.weeks);
+
+    if(allRows.length === 0){
+      setStatus(op,'err','No data for today — try again after 3:30 PM CT or enter manually');
+      resultsEl.innerHTML = `
+        <div class="lrp-fetch-msg err">
+          USDA RMA has no quotes for today (${dateStr}).<br>
+          New rates post weekdays at 3:30 PM CT. LRP is also unavailable on CME holidays and USDA report days.<br><br>
+          <strong>You can still enter the EEV and Net Premium manually in the fields above.</strong><br>
+          <small><a href="https://public.rma.usda.gov/livestockreports" target="_blank" style="color:var(--hide-l)">Open RMA rate sheet →</a></small>
+        </div>`;
+      return;
+    }
+
+    // Store and render
+    lrpLiveData[op] = {weeks:twk.weeks, endDate:twk.endDate, rows:allRows};
+    populateCoverageCards(op, allRows, twk.weeks, dateStr);
+
+  } catch(err){
+    console.error('LRP fetch:', err);
+    const isLocal = location.protocol === 'file:';
+    setStatus(op,'err', isLocal ? 'Open from web — live feed requires hosting' : 'Could not reach RMA — enter rates manually');
+    resultsEl.innerHTML = isLocal ? `
+      <div class="lrp-fetch-msg err">
+        <strong>Live feed requires the tool to be hosted online.</strong><br>
+        Running from a local file blocks all network requests.<br><br>
+        <strong>Quick fix — Netlify Drop (free, 2 minutes):</strong><br>
+        1. Go to <a href="https://netlify.com/drop" target="_blank" style="color:var(--hide-l)">netlify.com/drop</a><br>
+        2. Drag and drop the <strong>agrowise-deploy folder</strong> onto the page<br>
+        3. Share the live URL with your agents<br><br>
+        <strong>Until then — enter rates manually:</strong><br>
+        <a href="https://public.rma.usda.gov/livestockreports" target="_blank" style="color:var(--hide-l)">Open RMA rate sheet →</a>
+      </div>` : `
+      <div class="lrp-fetch-msg err">
+        <strong>Unable to load RMA rates right now.</strong><br>
+        This may be a temporary RMA outage or network issue.<br><br>
+        <strong>Enter rates manually:</strong><br>
+        1. Open <a href="https://public.rma.usda.gov/livestockreports" target="_blank" style="color:var(--hide-l)">RMA Livestock Reports →</a><br>
+        2. Select today's date, commodity, and state<br>
+        3. Enter the <strong>Expected Ending Value</strong> and <strong>Net Premium</strong> into the fields above<br>
+        <small style="color:var(--mist);margin-top:6px;display:block">Coverage cards calculate correctly from manual entry.</small>
+      </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Get Quotes';
+  }
+}
+
+// Parse RMA HTML — returns array of {covPct, eev, covPx, netPrem, subsidySaved}
+// RMA table columns (typical): State | Weeks | End Date | Type/Class | Coverage Level % |
+//   Expected Ending Value | Coverage Price | Net Premium Rate | Actual Ending Value
+function parseLRPHtml(html, commodity, wtClass, targetWeeks){
+  const parser = new DOMParser();
+  const doc    = parser.parseFromString(html,'text/html');
+  const rows   = [];
+
+  doc.querySelectorAll('table').forEach(tbl=>{
+    const trs     = Array.from(tbl.querySelectorAll('tr'));
+    let hdrs      = [];
+
+    trs.forEach((tr,i)=>{
+      const cells = Array.from(tr.querySelectorAll('th,td')).map(c=>c.textContent.trim().replace(/\s+/g,' '));
+
+      // Detect header row
+      if(cells.some(c=>/(week|coverage.?level|expected.?ending|net.?premium)/i.test(c))){
+        hdrs = cells.map(c=>c.toLowerCase());
+        return;
+      }
+      if(cells.length < 5) return;
+
+      const row = parseRMARow(cells, hdrs, targetWeeks);
+      if(row) rows.push(row);
+    });
+  });
+
+  // If header parsing found nothing, try positional fallback
+  if(rows.length === 0) return parseRMAFallback(html, targetWeeks);
+
+  // Deduplicate by coverage level, keep one per level
+  const byLevel = {};
+  rows.forEach(r=>{ if(!byLevel[r.covPct]) byLevel[r.covPct]=r; });
+  return Object.values(byLevel).sort((a,b)=>a.covPct-b.covPct);
+}
+
+function parseRMARow(cells, hdrs, targetWeeks){
+  try {
+    let weeks=null, covPct=null, eev=null, covPx=null, netPrem=null, endDate=null;
+
+    cells.forEach((c,i)=>{
+      const h = hdrs[i]||'';
+      const n = parseFloat(c.replace(/[$,\s]/g,''));
+      if(/(^|\s)weeks?(\s|$)/i.test(h)||/(^|\s)wk(\s|$)/i.test(h)) { if(!isNaN(n)&&n>0) weeks=n; }
+      if(/coverage.?level|cvg.?lvl/i.test(h))  { if(!isNaN(n)&&n>=70&&n<=100) covPct=n; }
+      if(/expected.?ending|eev/i.test(h))       { if(!isNaN(n)&&n>50)  eev=n; }
+      if(/coverage.?price|floor|cvg.?price/i.test(h)) { if(!isNaN(n)&&n>50) covPx=n; }
+      if(/net.?premium|net.?rate|subsid/i.test(h))    { if(!isNaN(n)&&n>0&&n<50) netPrem=n; }
+      if(/(end.?date|date)/i.test(h)&&/\d/.test(c)) endDate=c;
+      // Bare number checks for weeks and coverage level columns
+      if([13,17,21,26,30,34,39,43,47,52].includes(+c.trim())) weeks=+c.trim();
+      if(!isNaN(+c.trim())&&+c.trim()>=70&&+c.trim()<=100&&covPct===null) covPct=+c.trim();
+    });
+
+    // Try positional if headers failed
+    if(!eev||!netPrem){
+      const nums=cells.map(c=>parseFloat(c.replace(/[$,%,\s]/g,''))).filter(n=>!isNaN(n)&&n>0);
+      const eevsC=nums.filter(n=>n>100&&n<600);
+      const premC=nums.filter(n=>n>0&&n<15);
+      if(!eev&&eevsC.length)  eev=eevsC[0];
+      if(!netPrem&&premC.length) netPrem=Math.min(...premC);
+    }
+
+    if(!netPrem||!eev) return null;
+    if(weeks!==null&&weeks!==targetWeeks) return null;  // filter to target week
+
+    if(!covPct&&covPx&&eev) covPct=Math.round((covPx/eev)*100);
+    if(!covPx&&eev&&covPct)  covPx=+(eev*(covPct/100)).toFixed(2);
+    if(!covPct) return null;
+
+    const subRate     = LRP_SUBSIDY[covPct]||LRP_SUBSIDY[90];
+    const grossPrem   = netPrem/(1-subRate);
+    const subsidySaved= +(grossPrem-netPrem).toFixed(4);
+
+    return {covPct, eev:+eev.toFixed(2), covPx:+covPx.toFixed(2), netPrem:+netPrem.toFixed(4), subsidySaved, endDate};
+  } catch(e){ return null; }
+}
+
+// Fallback: build synthetic rows from a single EEV if we can find it
+function parseRMAFallback(html, targetWeeks){
+  const numMatches = html.match(/\$?([\d]+\.[\d]{2,4})/g)||[];
+  const candidates = numMatches.map(m=>parseFloat(m.replace('$',''))).filter(n=>n>100&&n<600);
+  const premCand   = numMatches.map(m=>parseFloat(m.replace('$',''))).filter(n=>n>0.01&&n<15);
+  if(!candidates.length||!premCand.length) return [];
+
+  const eev     = candidates[0];
+  const basePrem= Math.min(...premCand);
+
+  // Generate synthetic rows for each coverage level using the subsidy schedule
+  return COV_PCTS.map(pct=>{
+    const covPx       = +(eev*(pct/100)).toFixed(2);
+    const subRate     = LRP_SUBSIDY[pct]||LRP_SUBSIDY[90];
+    // Scale premium by coverage level (higher coverage = higher premium roughly)
+    const scaleFactor = 0.5+(pct-70)/60;
+    const netPrem     = +(basePrem*scaleFactor).toFixed(4);
+    const grossPrem   = netPrem/(1-subRate);
+    const subsidySaved= +(grossPrem-netPrem).toFixed(4);
+    return {covPct:pct, eev:+eev.toFixed(2), covPx, netPrem, subsidySaved, endDate:null};
+  });
+}
+
+// Populate the five coverage cards with live RMA data
+function populateCoverageCards(op, rows, weeks, dateStr){
+  const resultsEl = $(op+'-fetch-results');
+  const hintEl    = $(op+'-fetch-hint');
+  const bar       = $(op+'-applied-bar');
+  const vals      = $(op+'-applied-vals');
+  const covLbl    = $(op+'-cov-lbl');
+
+  // Build a lookup by coverage level
+  const byLevel = {};
+  rows.forEach(r=>{ byLevel[r.covPct]=r; });
+
+  // Get producer's breakeven for recommendation logic
+  let totalCost=0;
+  CATS.forEach(c=>{ totalCost+=parseFloat($(op+'-'+c.key)?.value)||0; });
+  const lrpWt   = numIn(op+'-lrp-wt');
+  const breakeven= lrpWt>0&&totalCost>0 ? totalCost/lrpWt : null;
+
+  // Find the recommended coverage level (closest floor at or above breakeven)
+  let recommendedPct = 90;
+  if(breakeven){
+    let bestMatch = null;
+    COV_PCTS.forEach(pct=>{
+      const r = byLevel[pct];
+      if(!r) return;
+      if(r.covPx >= breakeven){
+        if(!bestMatch||r.covPx<byLevel[bestMatch].covPx) bestMatch=pct;
+      }
+    });
+    if(bestMatch) recommendedPct = bestMatch;
+  }
+
+  // Update each card
+  COV_PCTS.forEach(pct=>{
+    const card    = $(op+'-card-'+pct);
+    const fEl     = $(op+'-cf-'+pct);
+    const lEl     = $(op+'-cl-'+pct);
+    const premEl  = $(op+'-cprem-'+pct);
+    const premHdEl= $(op+'-cpremhd-'+pct);
+    const subEl   = $(op+'-csub-'+pct);
+    const netEl   = $(op+'-cn-'+pct);
+    if(!card) return;
+
+    // Remove old recommended badge
+    card.querySelectorAll('.cov-recommended-badge').forEach(b=>b.remove());
+    card.classList.remove('loading');
+
+    const r = byLevel[pct];
+    if(r){
+      fEl.textContent  = `Floor: $${r.covPx.toFixed(2)}/cwt`;
+      premEl.textContent = `$${r.netPrem.toFixed(4)}`;
+      subEl.textContent  = `Subsidy saves $${r.subsidySaved.toFixed(4)}/cwt`;
+
+      // Net at floor calculation
+      const premHd = r.netPrem * lrpWt;
+      if(totalCost>0 && lrpWt>0){
+        const revAtFloor = r.covPx * lrpWt;
+        const netAtFloor = revAtFloor - totalCost - premHd;
+        lEl.textContent  = `Net at floor: ${netAtFloor>=0?'+':''}${money(netAtFloor)}/hd`;
+        netEl.textContent= premHd>0 ? `${money(premHd)}/hd premium` : '';
+        if(premHdEl) premHdEl.textContent = premHd>0 ? `$${premHd.toFixed(2)}/head total premium` : '';
+        card.classList.remove('ok','bad');
+        card.classList.add(netAtFloor>=0?'ok':'bad');
+      } else {
+        lEl.textContent   = `Max loss covered: ${money((rows[0]?.eev||0)*pct/100*lrpWt - r.covPx*lrpWt)}/hd`;
+        netEl.textContent = '';
+        if(premHdEl) premHdEl.textContent = lrpWt>0 ? `$${premHd.toFixed(2)}/head` : '';
+        card.classList.remove('ok','bad');
+      }
+
+      // Add recommended badge
+      if(pct===recommendedPct){
+        const badge = document.createElement('div');
+        badge.className = 'cov-recommended-badge';
+        badge.textContent = '★ Recommended';
+        card.appendChild(badge);
+      }
+    } else {
+      // No data for this level — show manual entry prompt
+      fEl.textContent   = `Floor: ${pct}% of EEV`;
+      lEl.textContent   = 'No RMA quote at this level';
+      premEl.textContent= '—';
+      if(premHdEl) premHdEl.textContent = '';
+      subEl.textContent  = '';
+      netEl.textContent  = '';
+      card.classList.remove('ok','bad');
+    }
+  });
+
+  // Auto-select the recommended card
+  const selCard = $(op+'-card-'+recommendedPct);
+  if(selCard){
+    $$(`#op-${op} .cov-card`).forEach(c=>c.classList.remove('sel'));
+    selCard.classList.add('sel');
+    activeCov[op] = recommendedPct;
+    // Apply EEV and premium from recommended level to inputs
+    const rec = byLevel[recommendedPct];
+    if(rec){
+      const eevEl  = $(op+'-lrp-eev');
+      const premEl = $(op+'-lrp-prem');
+      if(eevEl)  { eevEl.value=rec.eev.toFixed(2);    eevEl.style.background='var(--grn-p)'; eevEl.style.borderColor='var(--grn)'; }
+      if(premEl) { premEl.value=rec.netPrem.toFixed(4); premEl.style.background='var(--grn-p)'; premEl.style.borderColor='var(--grn)'; }
+    }
+  }
+
+  // Show results summary
+  const eevDisplay = rows[0]?.eev?.toFixed(2)||'—';
+  resultsEl.innerHTML = `<div style="padding:10px 2px;font-size:.74rem;color:var(--mist)">
+    ✓ ${rows.length} coverage level${rows.length!==1?'s':''} loaded for <strong style="color:var(--gold-l)">${weeks}-week endorsement</strong> · EEV: <strong style="color:var(--gold-l)">$${eevDisplay}</strong> · As of ${dateStr}
+    <span style="margin-left:12px;color:var(--hide-l)">Click any card below to select that coverage level</span>
+  </div>`;
+
+  if(hintEl) hintEl.textContent = '';
+  if(covLbl) covLbl.innerHTML = `Select Coverage Level — <strong style="color:var(--gold-l)">${weeks}-week endorsement · ${dateStr}</strong> · ★ = recommended based on your breakeven`;
+
+  setStatus(op,'ok',`${rows.length} coverage levels loaded · ${weeks}-week · As of ${dateStr}`);
+
+  if(bar)  bar.classList.add('show');
+  if(vals) vals.textContent = `${weeks}-week endorsement · End: ${$(op+'-fc-enddate')?.value||'—'} · ${rows.length} coverage levels`;
+
+  calcLRP(op);
+}
+
+// New pickCov that also updates EEV/premium inputs from live data
+function pickCovLive(op, pct, el){
+  $$(`#op-${op} .cov-card`).forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  activeCov[op] = pct;
+
+  // If live data exists for this op, populate inputs from stored data
+  const live = lrpLiveData[op];
+  if(live){
+    const r = live.rows.find(row=>row.covPct===pct);
+    if(r){
+      const eevEl  = $(op+'-lrp-eev');
+      const premEl = $(op+'-lrp-prem');
+      if(eevEl)  { eevEl.value=r.eev.toFixed(2);     eevEl.style.background='var(--grn-p)'; eevEl.style.borderColor='var(--grn)'; }
+      if(premEl) { premEl.value=r.netPrem.toFixed(4); premEl.style.background='var(--grn-p)'; premEl.style.borderColor='var(--grn)'; }
+    }
+  }
+  calcLRP(op);
+}
+
+/* ═══════════════════════════════════════════
+   UI INTERACTIONS
+═══════════════════════════════════════════ */
+function switchOp(op){
+  $$('.op-panel').forEach(p=>p.classList.remove('on'));
+  $$('.op-tab').forEach(t=>t.classList.remove('on'));
+  $('op-'+op).classList.add('on');
+  $('optab-'+op).classList.add('on');
+}
+
+function switchSec(op, sec, tabEl){
+  $$('#op-'+op+' .sec').forEach(s=>s.classList.remove('on'));
+  $$('#op-'+op+' .tab').forEach(t=>t.classList.remove('on'));
+  $(op+'-'+sec).classList.add('on');
+  tabEl.classList.add('on');
+}
+
+function pickCov(op, pct, el){ pickCovLive(op, pct, el); }
+
+function clearAll(){
+  if(!confirm('Clear all data? This cannot be undone.')) return;
+  $$('input[type="number"],input[type="text"],input[type="date"],textarea').forEach(el=>{
+    if(!el.readOnly) el.value='';
+  });
+  OPS.forEach(o=>{ recalc(o.id); calcFeed(o.id); calcPasture(o.id); });
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+build();
+$('p-date').value = new Date().toISOString().split('T')[0];
+OPS.forEach(o=>recalc(o.id));
+</script>
+</body>
+</html>
